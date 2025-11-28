@@ -4,7 +4,6 @@
  * Color-coded based on role type for quick identification.
  */
 
-import React from 'react';
 import type { UserRole } from '../context/AuthContext';
 import { roleDisplayNames } from '../context/AuthContext';
 
@@ -27,7 +26,7 @@ const sizeClasses = {
   lg: 'px-4 py-1.5 text-base',
 };
 
-const RoleBadge: React.FC<RoleBadgeProps> = ({ role, size = 'md' }) => {
+function RoleBadge({ role, size = 'md' }: RoleBadgeProps) {
   return (
     <span
       className={`inline-flex items-center font-medium rounded-full border ${roleColors[role]} ${sizeClasses[size]}`}
@@ -35,6 +34,6 @@ const RoleBadge: React.FC<RoleBadgeProps> = ({ role, size = 'md' }) => {
       {roleDisplayNames[role]}
     </span>
   );
-};
+}
 
 export default RoleBadge;
