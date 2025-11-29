@@ -7,14 +7,25 @@
 
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { initialEvents, getUpcomingEvents, getEndedEvents, type EventStatus } from '../data/events';
+import { useEvents } from '../context/EventContext';
+import type { EventStatus } from '../data/events';
 
 const DashboardOrganiser: React.FC = () => {
+  const { events } = useEvents();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'ended'>('upcoming');
   
-  // Get events
-  const upcomingEvents = useMemo(() => getUpcomingEvents(initialEvents), []);
-  const endedEvents = useMemo(() => getEndedEvents(initialEvents), []);
+  // Get events from context
+  const upcomingEvents = useMemo(() => 
+    events.filter(e => e.status === 'upcoming')
+      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()),
+    [events]
+  );
+  
+  const endedEvents = useMemo(() => 
+    events.filter(e => e.status === 'ended' || e.status === 'archived')
+      .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()),
+    [events]
+  );
 
   // Status badge colors (Set 1 + Set 2)
   const statusColors: Record<EventStatus, string> = {

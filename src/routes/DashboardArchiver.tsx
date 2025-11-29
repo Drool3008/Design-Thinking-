@@ -9,14 +9,25 @@
 
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { initialEvents, getEndedEvents, getArchivedEvents, type Event } from '../data/events';
+import { useEvents } from '../context/EventContext';
+import type { Event } from '../data/events';
 
 const DashboardArchiver: React.FC = () => {
+  const { events } = useEvents();
   const [activeTab, setActiveTab] = useState<'pending' | 'archived'>('pending');
 
-  // Get ended and archived events
-  const endedEvents = useMemo(() => getEndedEvents(initialEvents), []);
-  const archivedEvents = useMemo(() => getArchivedEvents(initialEvents), []);
+  // Get ended and archived events from context
+  const endedEvents = useMemo(() => 
+    events.filter(e => e.status === 'ended')
+      .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()),
+    [events]
+  );
+  
+  const archivedEvents = useMemo(() => 
+    events.filter(e => e.status === 'archived')
+      .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()),
+    [events]
+  );
   
   // Pending = ended but not yet fully archived
   const pendingEvents = useMemo(() => 
