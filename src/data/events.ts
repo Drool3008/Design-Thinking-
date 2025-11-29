@@ -1,335 +1,344 @@
 /**
  * Mock data for events in the college event management portal.
- * This file contains sample events with various statuses, departments, and categories.
+ * Updated for Set 1 workflow: Event Group creates drafts, publishes to website.
+ * 
+ * Event Lifecycle:
+ * 1. Event Group creates draft event (status: "draft") - visible only in their dashboard
+ * 2. Event Group publishes event (status: "upcoming") - visible on public homepage
+ * 3. After event ends (status: "ended") - gallery section becomes available
  */
 
-export type EventStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Completed';
+// Event status for Set 1 workflow
+export type EventStatus = 'draft' | 'upcoming' | 'ended';
 
+// Media links for ended events (gallery)
+export interface MediaLinks {
+  photos: string[];
+  videos: string[];
+}
+
+// Main Event interface for Set 1
 export interface Event {
   id: string;
   title: string;
-  description: string;
-  department: string;
-  category: string;
-  date: string; // ISO date string
-  time: string;
-  venue: string;
-  capacity: number;
-  status: EventStatus;
-  organiserGroup: string;
-  facultyInCharge: string;
-  isArchived: boolean;
-  imageUrl: string;
-  tags: string[];
-  lastUpdated: string;
-  registrationLink?: string;
+  club: string;              // Which club organizes this event
+  dateTime: string;          // ISO datetime string
+  type: string;              // Type of event (workshop, talk, competition, etc.)
+  shortDescription: string;  // Brief description for cards
+  fullDescription?: string;  // Detailed description for event page
+  status: EventStatus;       // draft | upcoming | ended
+  registrationUrl?: string;  // Generated registration link (for upcoming events)
+  mediaLinks?: MediaLinks;   // Photos/videos (for ended events)
+  eventGroupId: string;      // Which event group owns this event
+  imageUrl?: string;         // Optional cover image
+  venue?: string;            // Event location
+  lastUpdated: string;       // Last modification date
 }
 
-// Categories for filtering
-export const categories = [
-  'Technical',
-  'Cultural',
-  'Sports',
-  'Workshop',
-  'Seminar',
-  'Competition',
-  'Festival',
-  'Guest Lecture',
+// Available clubs for filtering and selection
+export const clubs = [
+  'Robotics Club',
+  'Coding Club',
+  'AI/ML Club',
+  'Cultural Committee',
+  'Sports Committee',
+  'Photography Club',
+  'Music Club',
+  'Drama Club',
+  'Literary Club',
+  'Entrepreneurship Cell',
+  'IEEE Student Branch',
+  'ACM Chapter',
 ];
 
-// Departments for filtering
-export const departments = [
-  'Computer Science',
-  'Electronics',
-  'Mechanical',
-  'Civil',
-  'Chemical',
-  'Mathematics',
-  'Physics',
-  'Student Council',
-  'Cultural Committee',
+// Event types for filtering and selection
+export const eventTypes = [
+  'Workshop',
+  'Talk',
+  'Competition',
+  'Hackathon',
+  'Cultural Event',
+  'Sports Event',
+  'Seminar',
+  'Guest Lecture',
+  'Exhibition',
+  'Festival',
+  'Meetup',
+  'Training',
+];
+
+// Event Group IDs (simulating different event groups for different clubs)
+export const eventGroups = [
+  { id: 'eg-robotics', name: 'Robotics Club Event Group', club: 'Robotics Club' },
+  { id: 'eg-coding', name: 'Coding Club Event Group', club: 'Coding Club' },
+  { id: 'eg-aiml', name: 'AI/ML Club Event Group', club: 'AI/ML Club' },
+  { id: 'eg-cultural', name: 'Cultural Committee Event Group', club: 'Cultural Committee' },
+  { id: 'eg-sports', name: 'Sports Committee Event Group', club: 'Sports Committee' },
+  { id: 'eg-photo', name: 'Photography Club Event Group', club: 'Photography Club' },
 ];
 
 // Mock events data
-export const events: Event[] = [
+export const initialEvents: Event[] = [
+  // UPCOMING EVENTS (published, visible on homepage)
   {
     id: '1',
-    title: 'TechFest 2025',
-    description: 'Annual technical festival featuring hackathons, coding competitions, robotics challenges, and tech talks from industry experts. Join us for three days of innovation and learning!',
-    department: 'Computer Science',
-    category: 'Festival',
-    date: '2025-12-15',
-    time: '09:00',
-    venue: 'Main Auditorium & Tech Block',
-    capacity: 500,
-    status: 'Approved',
-    organiserGroup: 'Tech Club',
-    facultyInCharge: 'Dr. Rajesh Kumar',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=250&fit=crop',
-    tags: ['hackathon', 'coding', 'robotics', 'tech'],
+    title: 'RoboWars 2025',
+    club: 'Robotics Club',
+    dateTime: '2025-12-15T09:00:00',
+    type: 'Competition',
+    shortDescription: 'Annual robot combat competition featuring teams from across the country.',
+    fullDescription: 'RoboWars 2025 is our flagship annual robot combat competition. Teams will compete in various weight categories, showcasing their engineering prowess. Categories include: Lightweight Bots, Heavyweight Bots, and Autonomous Navigation Challenge. Prizes worth ₹1,00,000 to be won!',
+    status: 'upcoming',
+    registrationUrl: 'https://forms.example.com/robowars2025',
+    eventGroupId: 'eg-robotics',
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=250&fit=crop',
+    venue: 'Main Ground & Tech Block',
     lastUpdated: '2025-11-25',
-    registrationLink: 'https://example.com/register',
   },
   {
     id: '2',
-    title: 'AI/ML Workshop',
-    description: 'Hands-on workshop on Machine Learning fundamentals, neural networks, and practical applications using Python and TensorFlow. Perfect for beginners and intermediate learners.',
-    department: 'Computer Science',
-    category: 'Workshop',
-    date: '2025-12-05',
-    time: '10:00',
-    venue: 'Computer Lab 3',
-    capacity: 60,
-    status: 'Approved',
-    organiserGroup: 'AI Club',
-    facultyInCharge: 'Dr. Priya Sharma',
-    isArchived: false,
+    title: 'AI/ML Workshop Series',
+    club: 'AI/ML Club',
+    dateTime: '2025-12-05T10:00:00',
+    type: 'Workshop',
+    shortDescription: 'Hands-on workshop covering ML fundamentals, neural networks, and practical applications.',
+    fullDescription: 'A comprehensive 3-day workshop series covering: Day 1 - Python for ML & Data Preprocessing, Day 2 - Neural Networks & Deep Learning basics, Day 3 - Hands-on project building a real ML model. Prerequisites: Basic Python knowledge. Laptops required.',
+    status: 'upcoming',
+    registrationUrl: 'https://forms.example.com/aiml-workshop',
+    eventGroupId: 'eg-aiml',
     imageUrl: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=250&fit=crop',
-    tags: ['AI', 'machine learning', 'python', 'workshop'],
+    venue: 'Computer Lab 3',
     lastUpdated: '2025-11-20',
-    registrationLink: 'https://example.com/register',
   },
   {
     id: '3',
-    title: 'Cultural Night - Resonance',
-    description: 'An evening of music, dance, and theatrical performances showcasing the diverse talents of our students. Features classical and contemporary performances.',
-    department: 'Cultural Committee',
-    category: 'Cultural',
-    date: '2025-12-20',
-    time: '18:00',
-    venue: 'Open Air Theatre',
-    capacity: 800,
-    status: 'Pending Approval',
-    organiserGroup: 'Cultural Committee',
-    facultyInCharge: 'Prof. Anita Desai',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop',
-    tags: ['music', 'dance', 'cultural', 'performance'],
-    lastUpdated: '2025-11-28',
+    title: 'Code Sprint 2025',
+    club: 'Coding Club',
+    dateTime: '2025-12-10T14:00:00',
+    type: 'Hackathon',
+    shortDescription: '24-hour coding marathon with exciting problem statements and amazing prizes.',
+    fullDescription: 'Code Sprint is our annual hackathon bringing together the brightest minds. This year\'s themes: Sustainable Tech, Healthcare Innovation, and EdTech Solutions. Form teams of 2-4 members. Mentorship from industry professionals throughout the event.',
+    status: 'upcoming',
+    registrationUrl: 'https://forms.example.com/codesprint2025',
+    eventGroupId: 'eg-coding',
+    imageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=250&fit=crop',
+    venue: 'Innovation Hub',
+    lastUpdated: '2025-11-22',
   },
   {
     id: '4',
-    title: 'Inter-College Basketball Tournament',
-    description: 'Annual inter-college basketball championship featuring teams from top engineering colleges. Three days of intense competition and sportsmanship.',
-    department: 'Student Council',
-    category: 'Sports',
-    date: '2025-12-10',
-    time: '08:00',
-    venue: 'Sports Complex',
-    capacity: 200,
-    status: 'Approved',
-    organiserGroup: 'Sports Committee',
-    facultyInCharge: 'Mr. Vikram Singh',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=250&fit=crop',
-    tags: ['basketball', 'sports', 'tournament', 'inter-college'],
-    lastUpdated: '2025-11-22',
-    registrationLink: 'https://example.com/register',
+    title: 'Cultural Night - Resonance',
+    club: 'Cultural Committee',
+    dateTime: '2025-12-20T18:00:00',
+    type: 'Cultural Event',
+    shortDescription: 'An evening of music, dance, and theatrical performances.',
+    fullDescription: 'Resonance brings together the finest talent from across campus. Performances include: Classical dance, Western band performances, Stand-up comedy, Theatrical drama, and a surprise celebrity performance. Open to all!',
+    status: 'upcoming',
+    eventGroupId: 'eg-cultural',
+    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop',
+    venue: 'Open Air Theatre',
+    lastUpdated: '2025-11-28',
   },
   {
     id: '5',
-    title: 'Guest Lecture: Future of Quantum Computing',
-    description: 'Distinguished lecture by Dr. Sarah Chen from IBM Research on the current state and future prospects of quantum computing and its applications.',
-    department: 'Physics',
-    category: 'Guest Lecture',
-    date: '2025-12-08',
-    time: '14:00',
+    title: 'Tech Talk: Future of Web Development',
+    club: 'Coding Club',
+    dateTime: '2025-12-08T15:00:00',
+    type: 'Talk',
+    shortDescription: 'Industry expert shares insights on emerging web technologies and career paths.',
+    fullDescription: 'Join us for an insightful session with Mr. Arun Sharma, Senior Engineer at Google, as he discusses: Modern JavaScript frameworks, Web3 and decentralized apps, Career opportunities in web development, and Q&A session.',
+    status: 'upcoming',
+    registrationUrl: 'https://forms.example.com/techtalk-web',
+    eventGroupId: 'eg-coding',
+    imageUrl: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop',
     venue: 'Seminar Hall A',
-    capacity: 150,
-    status: 'Approved',
-    organiserGroup: 'Physics Society',
-    facultyInCharge: 'Dr. Amit Verma',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=250&fit=crop',
-    tags: ['quantum', 'physics', 'lecture', 'research'],
     lastUpdated: '2025-11-18',
   },
+
+  // ENDED EVENTS (past events with gallery)
   {
     id: '6',
-    title: 'Startup Pitch Competition',
-    description: 'Present your startup ideas to a panel of investors and industry mentors. Top three teams win seed funding and incubation support.',
-    department: 'Student Council',
-    category: 'Competition',
-    date: '2025-12-12',
-    time: '11:00',
-    venue: 'Innovation Hub',
-    capacity: 100,
-    status: 'Pending Approval',
-    organiserGroup: 'E-Cell',
-    facultyInCharge: 'Dr. Meera Patel',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop',
-    tags: ['startup', 'entrepreneurship', 'pitch', 'innovation'],
-    lastUpdated: '2025-11-26',
-  },
-  {
-    id: '7',
-    title: 'Web Development Bootcamp',
-    description: 'Intensive 2-day bootcamp covering modern web development with React, Node.js, and cloud deployment. Build a full-stack project by the end!',
-    department: 'Computer Science',
-    category: 'Workshop',
-    date: '2025-12-18',
-    time: '09:00',
-    venue: 'Computer Lab 1 & 2',
-    capacity: 40,
-    status: 'Draft',
-    organiserGroup: 'Web Dev Club',
-    facultyInCharge: 'Dr. Rahul Mehta',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=250&fit=crop',
-    tags: ['web', 'react', 'nodejs', 'fullstack'],
-    lastUpdated: '2025-11-27',
-  },
-  {
-    id: '8',
-    title: 'Robotics Exhibition',
-    description: 'Showcase of student-built robots and autonomous systems. Interactive demonstrations and live robot battles!',
-    department: 'Mechanical',
-    category: 'Technical',
-    date: '2025-12-22',
-    time: '10:00',
-    venue: 'Exhibition Hall',
-    capacity: 300,
-    status: 'Pending Approval',
-    organiserGroup: 'Robotics Club',
-    facultyInCharge: 'Dr. Suresh Nair',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=250&fit=crop',
-    tags: ['robotics', 'exhibition', 'automation', 'AI'],
-    lastUpdated: '2025-11-24',
-  },
-  {
-    id: '9',
-    title: 'Mathematics Olympiad',
-    description: 'Annual mathematics competition for problem-solving enthusiasts. Multiple rounds testing analytical and mathematical skills.',
-    department: 'Mathematics',
-    category: 'Competition',
-    date: '2025-12-06',
-    time: '09:30',
-    venue: 'Examination Hall',
-    capacity: 200,
-    status: 'Approved',
-    organiserGroup: 'Math Club',
-    facultyInCharge: 'Prof. Lakshmi Iyer',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=250&fit=crop',
-    tags: ['mathematics', 'olympiad', 'problem-solving'],
-    lastUpdated: '2025-11-15',
-    registrationLink: 'https://example.com/register',
-  },
-  {
-    id: '10',
-    title: 'Photography Workshop',
-    description: 'Learn photography basics, composition techniques, and photo editing. Bring your camera or smartphone!',
-    department: 'Cultural Committee',
-    category: 'Workshop',
-    date: '2025-12-14',
-    time: '15:00',
-    venue: 'Art Studio',
-    capacity: 30,
-    status: 'Approved',
-    organiserGroup: 'Photography Club',
-    facultyInCharge: 'Ms. Kavita Reddy',
-    isArchived: false,
+    title: 'Photography Walk 2024',
+    club: 'Photography Club',
+    dateTime: '2024-10-15T07:00:00',
+    type: 'Workshop',
+    shortDescription: 'Morning photography walk capturing campus beauty.',
+    fullDescription: 'A serene morning walk around campus capturing the golden hour. Participants learned about composition, lighting, and storytelling through photos.',
+    status: 'ended',
+    eventGroupId: 'eg-photo',
     imageUrl: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=400&h=250&fit=crop',
-    tags: ['photography', 'creative', 'art', 'workshop'],
-    lastUpdated: '2025-11-19',
-  },
-  // Past/Archived events
-  {
-    id: '11',
-    title: 'Hackathon 2024',
-    description: '24-hour coding marathon that brought together the best minds to solve real-world problems.',
-    department: 'Computer Science',
-    category: 'Competition',
-    date: '2024-10-15',
-    time: '09:00',
-    venue: 'Tech Block',
-    capacity: 200,
-    status: 'Completed',
-    organiserGroup: 'Tech Club',
-    facultyInCharge: 'Dr. Rajesh Kumar',
-    isArchived: true,
-    imageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=250&fit=crop',
-    tags: ['hackathon', 'coding', 'competition'],
+    venue: 'Campus Wide',
+    mediaLinks: {
+      photos: [
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800',
+        'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800',
+      ],
+      videos: [],
+    },
     lastUpdated: '2024-10-20',
   },
   {
-    id: '12',
-    title: 'Annual Sports Day 2024',
-    description: 'A day filled with athletic competitions, team sports, and celebration of sportsmanship.',
-    department: 'Student Council',
-    category: 'Sports',
-    date: '2024-09-20',
-    time: '07:00',
-    venue: 'Sports Ground',
-    capacity: 1000,
-    status: 'Completed',
-    organiserGroup: 'Sports Committee',
-    facultyInCharge: 'Mr. Vikram Singh',
-    isArchived: true,
-    imageUrl: 'https://images.unsplash.com/photo-1461896836934- voices-athletes?w=400&h=250&fit=crop',
-    tags: ['sports', 'athletics', 'annual'],
+    id: '7',
+    title: 'Hackathon 2024',
+    club: 'Coding Club',
+    dateTime: '2024-09-20T09:00:00',
+    type: 'Hackathon',
+    shortDescription: '24-hour coding marathon that brought together brilliant minds.',
+    fullDescription: 'Hackathon 2024 was a massive success with 50+ teams participating. Winning projects included an AI-powered accessibility tool and a sustainable farming app.',
+    status: 'ended',
+    eventGroupId: 'eg-coding',
+    imageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=250&fit=crop',
+    venue: 'Tech Block',
+    mediaLinks: {
+      photos: [
+        'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800',
+        'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800',
+      ],
+      videos: [
+        'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      ],
+    },
     lastUpdated: '2024-09-25',
   },
   {
-    id: '13',
-    title: 'Cultural Fest - Tarang 2024',
-    description: 'Three-day cultural extravaganza featuring music, dance, drama, and art exhibitions.',
-    department: 'Cultural Committee',
-    category: 'Festival',
-    date: '2024-11-10',
-    time: '10:00',
-    venue: 'Campus Wide',
-    capacity: 2000,
-    status: 'Completed',
-    organiserGroup: 'Cultural Committee',
-    facultyInCharge: 'Prof. Anita Desai',
-    isArchived: false,
-    imageUrl: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&h=250&fit=crop',
-    tags: ['cultural', 'festival', 'music', 'dance'],
+    id: '8',
+    title: 'Annual Sports Day 2024',
+    club: 'Sports Committee',
+    dateTime: '2024-11-10T08:00:00',
+    type: 'Sports Event',
+    shortDescription: 'A day of athletic competitions and team sports.',
+    fullDescription: 'Annual Sports Day featured track and field events, team sports like football and cricket, and culminated in a prize distribution ceremony.',
+    status: 'ended',
+    eventGroupId: 'eg-sports',
+    imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=250&fit=crop',
+    venue: 'Sports Ground',
+    mediaLinks: {
+      photos: [
+        'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800',
+      ],
+      videos: [],
+    },
     lastUpdated: '2024-11-15',
+  },
+
+  // DRAFT EVENTS (only visible to Event Group in dashboard)
+  {
+    id: '9',
+    title: 'Drone Racing Championship',
+    club: 'Robotics Club',
+    dateTime: '2026-01-20T10:00:00',
+    type: 'Competition',
+    shortDescription: 'First-ever drone racing event on campus.',
+    fullDescription: 'Get ready for high-speed drone action! Participants will navigate custom-built drones through obstacle courses. Multiple categories for beginners and experts.',
+    status: 'draft',
+    eventGroupId: 'eg-robotics',
+    imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400&h=250&fit=crop',
+    venue: 'Main Ground',
+    lastUpdated: '2025-11-28',
+  },
+  {
+    id: '10',
+    title: 'Python Bootcamp for Beginners',
+    club: 'Coding Club',
+    dateTime: '2026-01-05T09:00:00',
+    type: 'Workshop',
+    shortDescription: 'Comprehensive Python course for absolute beginners.',
+    fullDescription: 'A week-long bootcamp covering Python basics, data structures, OOP concepts, and a mini-project. Perfect for first-year students.',
+    status: 'draft',
+    eventGroupId: 'eg-coding',
+    venue: 'Computer Lab 1',
+    lastUpdated: '2025-11-27',
   },
 ];
 
-// Helper functions for filtering events
-export const getUpcomingEvents = () => {
-  const today = new Date().toISOString().split('T')[0];
-  return events.filter(e => e.date >= today && !e.isArchived).sort((a, b) => a.date.localeCompare(b.date));
-};
+// Helper functions
 
-export const getPastEvents = () => {
-  const today = new Date().toISOString().split('T')[0];
-  return events.filter(e => e.date < today || e.status === 'Completed');
-};
-
-export const getArchivedEvents = () => {
-  return events.filter(e => e.isArchived);
-};
-
-export const getEventsByStatus = (status: EventStatus) => {
-  return events.filter(e => e.status === status);
-};
-
-export const getEventsByDepartment = (department: string) => {
-  return events.filter(e => e.department === department);
-};
-
-export const getEventsByCategory = (category: string) => {
-  return events.filter(e => e.category === category);
-};
-
-export const getEventById = (id: string) => {
-  return events.find(e => e.id === id);
-};
-
-export const getRelatedEvents = (event: Event) => {
+/**
+ * Get all published (upcoming) events for public homepage
+ */
+export const getUpcomingEvents = (events: Event[]) => {
   return events
-    .filter(e => 
-      e.id !== event.id && 
-      !e.isArchived &&
-      (e.category === event.category || e.department === event.department)
-    )
-    .slice(0, 4);
+    .filter((e) => e.status === 'upcoming')
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+};
+
+/**
+ * Get all ended events
+ */
+export const getEndedEvents = (events: Event[]) => {
+  return events
+    .filter((e) => e.status === 'ended')
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+};
+
+/**
+ * Get events by event group ID (for dashboard)
+ */
+export const getEventsByEventGroup = (events: Event[], eventGroupId: string) => {
+  return events.filter((e) => e.eventGroupId === eventGroupId);
+};
+
+/**
+ * Get event by ID
+ */
+export const getEventById = (events: Event[], id: string) => {
+  return events.find((e) => e.id === id);
+};
+
+/**
+ * Filter events by club, type, and date range
+ */
+export const filterEvents = (
+  events: Event[],
+  filters: {
+    club?: string;
+    type?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    searchQuery?: string;
+  }
+) => {
+  return events.filter((event) => {
+    // Only show upcoming and ended events on public page (not drafts)
+    if (event.status === 'draft') return false;
+
+    // Club filter
+    if (filters.club && event.club !== filters.club) return false;
+
+    // Type filter
+    if (filters.type && event.type !== filters.type) return false;
+
+    // Date range filter
+    if (filters.dateFrom) {
+      const eventDate = new Date(event.dateTime);
+      const fromDate = new Date(filters.dateFrom);
+      if (eventDate < fromDate) return false;
+    }
+    if (filters.dateTo) {
+      const eventDate = new Date(event.dateTime);
+      const toDate = new Date(filters.dateTo);
+      toDate.setHours(23, 59, 59);
+      if (eventDate > toDate) return false;
+    }
+
+    // Search query filter
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      const matchesTitle = event.title.toLowerCase().includes(query);
+      const matchesDescription = event.shortDescription.toLowerCase().includes(query);
+      const matchesClub = event.club.toLowerCase().includes(query);
+      if (!matchesTitle && !matchesDescription && !matchesClub) return false;
+    }
+
+    return true;
+  });
+};
+
+/**
+ * Generate a dummy registration URL
+ */
+export const generateRegistrationUrl = (eventId: string, eventTitle: string) => {
+  const slug = eventTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  return `https://register.eventportal.edu/${slug}-${eventId}`;
 };

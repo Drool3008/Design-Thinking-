@@ -1,34 +1,32 @@
 /**
  * FilterBar Component
- * Filtering controls for events - department, category, date, search.
+ * Filtering controls for events - Club, Date, Type (Set 1 workflow).
  * Design inspired by BookMyShow's filter interface.
  */
 
 import React from 'react';
-import { categories, departments } from '../data/events';
+import { clubs, eventTypes } from '../data/events';
 
 interface FilterBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  selectedDepartment: string;
-  onDepartmentChange: (department: string) => void;
-  selectedCategory: string;
-  onCategoryChange: (category: string) => void;
-  selectedStatus?: string;
-  onStatusChange?: (status: string) => void;
-  showStatusFilter?: boolean;
+  selectedClub: string;
+  onClubChange: (club: string) => void;
+  selectedType: string;
+  onTypeChange: (type: string) => void;
+  selectedDate: string;
+  onDateChange: (date: string) => void;
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({
   searchQuery,
   onSearchChange,
-  selectedDepartment,
-  onDepartmentChange,
-  selectedCategory,
-  onCategoryChange,
-  selectedStatus,
-  onStatusChange,
-  showStatusFilter = false,
+  selectedClub,
+  onClubChange,
+  selectedType,
+  onTypeChange,
+  selectedDate,
+  onDateChange,
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
@@ -61,58 +59,50 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
         {/* Filter Dropdowns */}
         <div className="flex flex-wrap gap-3">
-          {/* Department Filter */}
+          {/* Club Filter */}
           <select
-            value={selectedDepartment}
-            onChange={(e) => onDepartmentChange(e.target.value)}
+            value={selectedClub}
+            onChange={(e) => onClubChange(e.target.value)}
             className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           >
-            <option value="">All Departments</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
+            <option value="">All Clubs</option>
+            {clubs.map((club) => (
+              <option key={club} value={club}>
+                {club}
               </option>
             ))}
           </select>
 
-          {/* Category Filter */}
+          {/* Event Type Filter */}
           <select
-            value={selectedCategory}
-            onChange={(e) => onCategoryChange(e.target.value)}
+            value={selectedType}
+            onChange={(e) => onTypeChange(e.target.value)}
             className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           >
-            <option value="">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+            <option value="">All Types</option>
+            {eventTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
               </option>
             ))}
           </select>
 
-          {/* Status Filter (optional) */}
-          {showStatusFilter && onStatusChange && (
-            <select
-              value={selectedStatus}
-              onChange={(e) => onStatusChange(e.target.value)}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            >
-              <option value="">All Status</option>
-              <option value="Draft">Draft</option>
-              <option value="Pending Approval">Pending Approval</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Completed">Completed</option>
-            </select>
-          )}
+          {/* Date Filter */}
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => onDateChange(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          />
 
           {/* Clear Filters Button */}
-          {(searchQuery || selectedDepartment || selectedCategory || selectedStatus) && (
+          {(searchQuery || selectedClub || selectedType || selectedDate) && (
             <button
               onClick={() => {
                 onSearchChange('');
-                onDepartmentChange('');
-                onCategoryChange('');
-                if (onStatusChange) onStatusChange('');
+                onClubChange('');
+                onTypeChange('');
+                onDateChange('');
               }}
               className="px-4 py-2.5 text-gray-600 hover:text-gray-900 font-medium transition-colors"
             >
