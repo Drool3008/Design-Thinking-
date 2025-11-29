@@ -8,31 +8,46 @@
 
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { initialEvents, filterEvents, getUpcomingEvents, getEndedEvents, clubs, eventTypes } from '../data/events';
+import { useEvents } from '../context/EventContext';
+import { filterEvents, clubs, eventTypes } from '../data/events';
 import EventCard from '../components/EventCard';
 import SectionHeading from '../components/SectionHeading';
 import FilterBar from '../components/FilterBar';
 
 const LandingPage: React.FC = () => {
+  // Use shared event context for real-time updates
+  const { events } = useEvents();
+  
   // Filter state - Set 1 workflow: Club, Date, Type
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClub, setSelectedClub] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
 
-  // Get upcoming and ended events (not drafts)
-  const upcomingEvents = useMemo(() => getUpcomingEvents(initialEvents), []);
-  const endedEvents = useMemo(() => getEndedEvents(initialEvents), []);
+  // Get upcoming and ended events (not drafts) from context
+  const upcomingEvents = useMemo(() => 
+    events
+      .filter(e => e.status === 'upcoming')
+      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()),
+    [events]
+  );
+  
+  const endedEvents = useMemo(() => 
+    events
+      .filter(e => e.status === 'ended' || e.status === 'archived')
+      .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()),
+    [events]
+  );
 
   // Filter events based on search and filters
   const filteredEvents = useMemo(() => {
-    return filterEvents(initialEvents, {
+    return filterEvents(events, {
       club: selectedClub,
       type: selectedType,
       dateFrom: selectedDate,
       searchQuery: searchQuery,
     });
-  }, [searchQuery, selectedClub, selectedType, selectedDate]);
+  }, [events, searchQuery, selectedClub, selectedType, selectedDate]);
 
   // Group upcoming events by type for horizontal sections
   const eventsByType = useMemo(() => {
@@ -198,7 +213,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-blue-600">{initialEvents.filter(e => e.status !== 'draft').length}+</div>
+              <div className="text-3xl font-bold text-blue-600">{events.filter(e => e.status !== 'draft').length}+</div>
               <div className="text-gray-600 mt-1">Total Events</div>
             </div>
             <div>

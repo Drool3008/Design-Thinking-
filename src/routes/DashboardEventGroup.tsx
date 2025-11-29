@@ -13,9 +13,10 @@
  * - Mark faculty attendance
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { initialEvents, type Event, type EventStatus, type EventGroupMedia, type FacultyAttendance, generateRegistrationUrl } from '../data/events';
+import { useEvents } from '../context/EventContext';
+import { type Event, type EventStatus, type EventGroupMedia, type FacultyAttendance, generateRegistrationUrl } from '../data/events';
 import EventForm from '../components/EventForm';
 import SectionHeading from '../components/SectionHeading';
 import EventGroupContentCapture from '../components/EventGroupContentCapture';
@@ -25,10 +26,24 @@ import FacultyAttendanceManager from '../components/FacultyAttendanceManager';
 const CURRENT_EVENT_GROUP_ID = 'eg-robotics';
 
 const DashboardEventGroup: React.FC = () => {
-  // State for events (in real app, this would come from API)
-  const [myEvents, setMyEvents] = useState<Event[]>(
-    initialEvents.filter((e) => e.eventGroupId === CURRENT_EVENT_GROUP_ID || e.eventGroupId === 'eg-coding')
+  // Use shared event context instead of local state
+  const { 
+    events, 
+    addEvent, 
+    updateEvent, 
+    deleteEvent, 
+    publishEvent, 
+    endEvent,
+    updateEventMedia,
+    updateFacultyAttendance 
+  } = useEvents();
+  
+  // Filter events for this event group
+  const myEvents = useMemo(() => 
+    events.filter((e) => e.eventGroupId === CURRENT_EVENT_GROUP_ID || e.eventGroupId === 'eg-coding'),
+    [events]
   );
+  
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'draft' | 'upcoming' | 'ended'>('all');
@@ -53,22 +68,8 @@ const DashboardEventGroup: React.FC = () => {
 
   // Set 3: Handle content capture updates
   const handleMediaChange = (eventId: string, media: EventGroupMedia) => {
-    setMyEvents(prev => prev.map(e => {
-      if (e.id === eventId) {
-        return {
-          ...e,
-          mediaLinks: {
-            ...e.mediaLinks,
-            photos: e.mediaLinks?.photos || [],
-            videos: e.mediaLinks?.videos || [],
-            eventGroup: media,
-          },
-          lastUpdated: new Date().toISOString().split('T')[0],
-        };
-      }
-      return e;
-    }));
-    // Update managingEvent as well
+    updateEventMedia(eventId, media);
+    // Update managingEvent as well for UI sync
     if (managingEvent && managingEvent.id === eventId) {
       setManagingEvent(prev => prev ? {
         ...prev,
@@ -84,17 +85,8 @@ const DashboardEventGroup: React.FC = () => {
 
   // Set 3: Handle faculty attendance updates
   const handleAttendanceChange = (eventId: string, attendance: FacultyAttendance) => {
-    setMyEvents(prev => prev.map(e => {
-      if (e.id === eventId) {
-        return {
-          ...e,
-          facultyAttendance: attendance,
-          lastUpdated: new Date().toISOString().split('T')[0],
-        };
-      }
-      return e;
-    }));
-    // Update managingEvent as well
+    updateFacultyAttendance(eventId, attendance);
+    // Update managingEvent as well for UI sync
     if (managingEvent && managingEvent.id === eventId) {
       setManagingEvent(prev => prev ? { ...prev, facultyAttendance: attendance } : null);
     }
@@ -103,16 +95,10 @@ const DashboardEventGroup: React.FC = () => {
   // Handle save from EventForm
   const handleSaveEvent = (eventData: Partial<Event>) => {
     if (editingEvent) {
-      // Update existing event
-      setMyEvents((prev) =>
-        prev.map((event) =>
-          event.id === editingEvent.id
-            ? { ...event, ...eventData, lastUpdated: new Date().toISOString().split('T')[0] }
-            : event
-        )
-      );
+      // Update existing event using context
+      updateEvent(editingEvent.id, eventData);
     } else {
-      // Create new event
+      // Create new event using context
       const newEvent: Event = {
         id: Date.now().toString(),
         title: eventData.title || '',
@@ -127,7 +113,7 @@ const DashboardEventGroup: React.FC = () => {
         imageUrl: eventData.imageUrl,
         lastUpdated: new Date().toISOString().split('T')[0],
       };
-      setMyEvents((prev) => [newEvent, ...prev]);
+      addEvent(newEvent);
     }
 
     setShowForm(false);
@@ -143,24 +129,13 @@ const DashboardEventGroup: React.FC = () => {
   // Handle delete event
   const handleDelete = (eventId: string) => {
     if (confirm('Are you sure you want to delete this event?')) {
-      setMyEvents((prev) => prev.filter((e) => e.id !== eventId));
+      deleteEvent(eventId);
     }
   };
 
-  // Publish event (draft -> upcoming)
+  // Publish event (draft -> upcoming) using context
   const handlePublish = (eventId: string) => {
-    setMyEvents((prev) =>
-      prev.map((e) =>
-        e.id === eventId
-          ? {
-              ...e,
-              status: 'upcoming' as EventStatus,
-              registrationUrl: generateRegistrationUrl(e.id, e.title),
-              lastUpdated: new Date().toISOString().split('T')[0],
-            }
-          : e
-      )
-    );
+    publishEvent(eventId);
   };
 
   // Generate new registration link
@@ -168,29 +143,15 @@ const DashboardEventGroup: React.FC = () => {
     const event = myEvents.find((e) => e.id === eventId);
     if (event) {
       const newUrl = generateRegistrationUrl(eventId, event.title);
-      setMyEvents((prev) =>
-        prev.map((e) =>
-          e.id === eventId ? { ...e, registrationUrl: newUrl, lastUpdated: new Date().toISOString().split('T')[0] } : e
-        )
-      );
+      updateEvent(eventId, { registrationUrl: newUrl });
       navigator.clipboard.writeText(newUrl);
       alert('Registration link generated and copied to clipboard!');
     }
   };
 
-  // Mark event as ended
+  // Mark event as ended using context
   const handleMarkEnded = (eventId: string) => {
-    setMyEvents((prev) =>
-      prev.map((e) =>
-        e.id === eventId
-          ? {
-              ...e,
-              status: 'ended' as EventStatus,
-              lastUpdated: new Date().toISOString().split('T')[0],
-            }
-          : e
-      )
-    );
+    endEvent(eventId);
   };
 
   // Copy registration link to clipboard

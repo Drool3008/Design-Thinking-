@@ -10,17 +10,19 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { initialEvents, getEventById, generateUploadLink, type Event, type ArchivalInfo } from '../data/events';
+import { useEvents } from '../context/EventContext';
+import { generateUploadLink, type Event, type ArchivalInfo } from '../data/events';
 import UploadWindowControls from '../components/UploadWindowControls';
 import ArchivalActions from '../components/ArchivalActions';
 
 const ArchiverEventPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
+  const { getEventById } = useEvents();
   
-  // Get event from mock data
+  // Get event from context
   const originalEvent = useMemo(() => {
-    return eventId ? getEventById(initialEvents, eventId) : undefined;
-  }, [eventId]);
+    return eventId ? getEventById(eventId) : undefined;
+  }, [eventId, getEventById]);
 
   // Local state for event modifications
   const [event, setEvent] = useState<Event | undefined>(originalEvent);
@@ -497,6 +499,101 @@ const ArchiverEventPage: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Event Group Captured Content */}
+          {event.mediaLinks?.eventGroup && (
+            <div className="bg-white rounded-xl shadow-sm border border-purple-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded">Event Group</span>
+                Content Captured by Event Group
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                This content was uploaded by the Event Group during/after the event.
+              </p>
+              
+              {/* Event Group Photos */}
+              {event.mediaLinks.eventGroup.photos && event.mediaLinks.eventGroup.photos.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Photos ({event.mediaLinks.eventGroup.photos.length})
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {event.mediaLinks.eventGroup.photos.map((url, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={url}
+                          alt={`Event Group Photo ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border-2 border-purple-200"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Event Group Videos */}
+              {event.mediaLinks.eventGroup.videos && event.mediaLinks.eventGroup.videos.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Videos ({event.mediaLinks.eventGroup.videos.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {event.mediaLinks.eventGroup.videos.map((url, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                        <span className="text-lg">🎬</span>
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm text-purple-600 hover:underline truncate">
+                          {url}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Event Group Audio */}
+              {event.mediaLinks.eventGroup.audio && event.mediaLinks.eventGroup.audio.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Audio ({event.mediaLinks.eventGroup.audio.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {event.mediaLinks.eventGroup.audio.map((url, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                        <span className="text-lg">🎵</span>
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm text-purple-600 hover:underline truncate">
+                          {url}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Event Group Text Notes */}
+              {event.mediaLinks.eventGroup.textNotes && event.mediaLinks.eventGroup.textNotes.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Notes ({event.mediaLinks.eventGroup.textNotes.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {event.mediaLinks.eventGroup.textNotes.map((note, index) => (
+                      <div key={index} className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                        <p className="text-sm text-gray-700">{note}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state for Event Group content */}
+              {(!event.mediaLinks.eventGroup.photos?.length && 
+                !event.mediaLinks.eventGroup.videos?.length && 
+                !event.mediaLinks.eventGroup.audio?.length && 
+                !event.mediaLinks.eventGroup.textNotes?.length) && (
+                <p className="text-sm text-gray-400">No content captured by Event Group yet.</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Column - Upload Window & Archival Actions */}

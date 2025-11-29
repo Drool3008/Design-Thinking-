@@ -7,7 +7,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { initialEvents, getEventById, getUpcomingEvents } from '../data/events';
+import { useEvents } from '../context/EventContext';
 import type { EventStatus } from '../data/events';
 import { useAuth } from '../context/AuthContext';
 import { getFacultyById, facultyMembers } from '../data/faculty';
@@ -22,24 +22,26 @@ const EventDetailPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { role } = useAuth();
+  const { events, getEventById } = useEvents();
 
   // State for faculty meeting request modal
   const [meetingModalOpen, setMeetingModalOpen] = useState(false);
   const [selectedFacultyForMeeting, setSelectedFacultyForMeeting] = useState<Faculty | null>(null);
 
-  // Get event by ID
+  // Get event by ID from context
   const event = useMemo(() => {
     if (!eventId) return null;
-    return getEventById(initialEvents, eventId);
-  }, [eventId]);
+    return getEventById(eventId);
+  }, [eventId, getEventById]);
 
-  // Get related events (same club or type)
+  // Get related events (same club or type) from context
   const relatedEvents = useMemo(() => {
     if (!event) return [];
-    return getUpcomingEvents(initialEvents)
+    return events
+      .filter(e => e.status === 'upcoming')
       .filter((e) => e.id !== event.id && (e.club === event.club || e.type === event.type))
       .slice(0, 4);
-  }, [event]);
+  }, [event, events]);
 
   // Format datetime for display
   const formatDateTime = (dateTimeStr: string) => {
