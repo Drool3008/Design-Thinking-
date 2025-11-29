@@ -1,57 +1,53 @@
 /**
  * Landing Page (Home)
  * Public landing page for viewers to browse events.
- * Design inspired by BookMyShow - hero, horizontally scrollable sections, event cards.
+ * Set 1 workflow: Shows upcoming and ended events (not drafts).
+ * Filters: Club, Date, Type of event.
+ * Design inspired by BookMyShow.
  */
 
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { events, categories, getUpcomingEvents } from '../data/events';
+import { initialEvents, filterEvents, getUpcomingEvents, getEndedEvents, clubs, eventTypes } from '../data/events';
 import EventCard from '../components/EventCard';
 import SectionHeading from '../components/SectionHeading';
 import FilterBar from '../components/FilterBar';
 
 const LandingPage: React.FC = () => {
-  // Filter state
+  // Filter state - Set 1 workflow: Club, Date, Type
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedClub, setSelectedClub] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
 
-  // Get upcoming events
-  const upcomingEvents = useMemo(() => getUpcomingEvents(), []);
+  // Get upcoming and ended events (not drafts)
+  const upcomingEvents = useMemo(() => getUpcomingEvents(initialEvents), []);
+  const endedEvents = useMemo(() => getEndedEvents(initialEvents), []);
 
   // Filter events based on search and filters
   const filteredEvents = useMemo(() => {
-    return upcomingEvents.filter((event) => {
-      const matchesSearch =
-        !searchQuery ||
-        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      const matchesDepartment = !selectedDepartment || event.department === selectedDepartment;
-      const matchesCategory = !selectedCategory || event.category === selectedCategory;
-
-      return matchesSearch && matchesDepartment && matchesCategory;
+    return filterEvents(initialEvents, {
+      club: selectedClub,
+      type: selectedType,
+      dateFrom: selectedDate,
+      searchQuery: searchQuery,
     });
-  }, [upcomingEvents, searchQuery, selectedDepartment, selectedCategory]);
+  }, [searchQuery, selectedClub, selectedType, selectedDate]);
 
-  // Group events by category for horizontal sections
-  const eventsByCategory = useMemo(() => {
-    const grouped: Record<string, typeof events> = {};
+  // Group upcoming events by type for horizontal sections
+  const eventsByType = useMemo(() => {
+    const grouped: Record<string, typeof upcomingEvents> = {};
     upcomingEvents.forEach((event) => {
-      if (!grouped[event.category]) {
-        grouped[event.category] = [];
+      if (!grouped[event.type]) {
+        grouped[event.type] = [];
       }
-      grouped[event.category].push(event);
+      grouped[event.type].push(event);
     });
     return grouped;
   }, [upcomingEvents]);
 
-  // Get popular events (just use first 6 approved events)
-  const popularEvents = useMemo(() => {
-    return upcomingEvents.filter((e) => e.status === 'Approved').slice(0, 6);
-  }, [upcomingEvents]);
+  // Check if any filter is active
+  const hasActiveFilters = searchQuery || selectedClub || selectedType || selectedDate;
 
   return (
     <div className="min-h-screen">
@@ -101,18 +97,20 @@ const LandingPage: React.FC = () => {
 
       {/* Main Content */}
       <div id="events" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Search and Filter Bar */}
+        {/* Search and Filter Bar - Set 1: Club, Date, Type */}
         <FilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          selectedDepartment={selectedDepartment}
-          onDepartmentChange={setSelectedDepartment}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
+          selectedClub={selectedClub}
+          onClubChange={setSelectedClub}
+          selectedType={selectedType}
+          onTypeChange={setSelectedType}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
         />
 
         {/* Show filtered results if any filter is active */}
-        {(searchQuery || selectedDepartment || selectedCategory) ? (
+        {hasActiveFilters ? (
           <section className="mb-12">
             <SectionHeading
               title="Search Results"
@@ -136,31 +134,38 @@ const LandingPage: React.FC = () => {
           </section>
         ) : (
           <>
-            {/* Popular Events Section */}
+            {/* Upcoming Events Section */}
             <section className="mb-12">
               <SectionHeading
-                title="Popular Events"
-                subtitle="Most anticipated events this month"
+                title="Upcoming Events"
+                subtitle="Events happening soon"
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {popularEvents.slice(0, 3).map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
+              {upcomingEvents.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {upcomingEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+                  <p className="text-gray-500">No upcoming events at the moment</p>
+                </div>
+              )}
             </section>
 
-            {/* Category-based horizontal scroll sections */}
-            {categories
-              .filter((cat) => eventsByCategory[cat]?.length > 0)
-              .map((category) => (
-                <section key={category} className="mb-12">
+            {/* Type-based horizontal scroll sections */}
+            {eventTypes
+              .filter((type) => eventsByType[type]?.length > 0)
+              .slice(0, 3) // Show only first 3 types to keep page manageable
+              .map((type) => (
+                <section key={type} className="mb-12">
                   <SectionHeading
-                    title={category}
-                    subtitle={`${eventsByCategory[category].length} events`}
+                    title={type}
+                    subtitle={`${eventsByType[type].length} events`}
                   />
                   <div className="relative">
                     <div className="flex overflow-x-auto scrollbar-hide space-x-4 pb-4 -mx-4 px-4">
-                      {eventsByCategory[category].map((event) => (
+                      {eventsByType[type].map((event) => (
                         <div key={event.id} className="flex-shrink-0 w-72">
                           <EventCard event={event} />
                         </div>
@@ -170,18 +175,20 @@ const LandingPage: React.FC = () => {
                 </section>
               ))}
 
-            {/* Upcoming Events Grid */}
-            <section className="mb-12">
-              <SectionHeading
-                title="All Upcoming Events"
-                subtitle="Browse all events happening soon"
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {upcomingEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
-            </section>
+            {/* Past Events Section - with Gallery indicator */}
+            {endedEvents.length > 0 && (
+              <section className="mb-12">
+                <SectionHeading
+                  title="Past Events"
+                  subtitle="Check out what happened"
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {endedEvents.slice(0, 4).map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
       </div>
@@ -191,7 +198,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-blue-600">{events.length}+</div>
+              <div className="text-3xl font-bold text-blue-600">{initialEvents.filter(e => e.status !== 'draft').length}+</div>
               <div className="text-gray-600 mt-1">Total Events</div>
             </div>
             <div>
@@ -199,12 +206,12 @@ const LandingPage: React.FC = () => {
               <div className="text-gray-600 mt-1">Upcoming</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-blue-600">{categories.length}</div>
-              <div className="text-gray-600 mt-1">Categories</div>
+              <div className="text-3xl font-bold text-blue-600">{clubs.length}</div>
+              <div className="text-gray-600 mt-1">Clubs</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-blue-600">10+</div>
-              <div className="text-gray-600 mt-1">Departments</div>
+              <div className="text-3xl font-bold text-blue-600">{eventTypes.length}</div>
+              <div className="text-gray-600 mt-1">Event Types</div>
             </div>
           </div>
         </div>

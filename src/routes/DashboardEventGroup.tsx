@@ -1,82 +1,53 @@
 /**
- * Event Group Dashboard
+ * Event Group Dashboard - Set 1 Workflow
  * Dashboard for event group members to create and manage their events.
  * 
- * Features:
- * - List of "My Events" with status indicators
- * - Create New Event form
- * - Edit/Delete draft events
+ * Set 1 Workflow:
+ * 1. Create draft events (visible only in dashboard)
+ * 2. Publish events (makes them visible on public homepage as "upcoming")
+ * 3. Generate registration links for published events
+ * 4. Mark events as ended (gallery becomes available)
  */
 
 import React, { useState } from 'react';
-import { events, type Event, type EventStatus, categories, departments } from '../data/events';
+import { Link } from 'react-router-dom';
+import { initialEvents, type Event, type EventStatus, generateRegistrationUrl } from '../data/events';
+import EventForm from '../components/EventForm';
 import SectionHeading from '../components/SectionHeading';
 
-// Type for the create event form
-interface EventFormData {
-  title: string;
-  description: string;
-  department: string;
-  category: string;
-  date: string;
-  time: string;
-  venue: string;
-  expectedAudience: number;
-  facultyCoordinator: string;
-}
-
-const initialFormData: EventFormData = {
-  title: '',
-  description: '',
-  department: '',
-  category: '',
-  date: '',
-  time: '',
-  venue: '',
-  expectedAudience: 50,
-  facultyCoordinator: '',
-};
+// Current event group ID (in real app, comes from auth context)
+const CURRENT_EVENT_GROUP_ID = 'eg-robotics';
 
 const DashboardEventGroup: React.FC = () => {
   // State for events (in real app, this would come from API)
   const [myEvents, setMyEvents] = useState<Event[]>(
-    events.filter((e) => e.organiserGroup === 'Tech Club' || e.organiserGroup === 'AI Club')
+    initialEvents.filter((e) => e.eventGroupId === CURRENT_EVENT_GROUP_ID || e.eventGroupId === 'eg-coding')
   );
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [formData, setFormData] = useState<EventFormData>(initialFormData);
+  const [activeTab, setActiveTab] = useState<'all' | 'draft' | 'upcoming' | 'ended'>('all');
 
-  // Status badge colors
+  // Status badge colors for Set 1 workflow
   const statusColors: Record<EventStatus, string> = {
-    'Draft': 'bg-gray-100 text-gray-700',
-    'Pending Approval': 'bg-yellow-100 text-yellow-700',
-    'Approved': 'bg-green-100 text-green-700',
-    'Rejected': 'bg-red-100 text-red-700',
-    'Completed': 'bg-blue-100 text-blue-700',
+    draft: 'bg-gray-100 text-gray-700',
+    upcoming: 'bg-green-100 text-green-700',
+    ended: 'bg-blue-100 text-blue-700',
   };
 
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const statusLabels: Record<EventStatus, string> = {
+    draft: 'Draft',
+    upcoming: 'Published',
+    ended: 'Ended',
   };
 
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Handle save from EventForm
+  const handleSaveEvent = (eventData: Partial<Event>) => {
     if (editingEvent) {
       // Update existing event
       setMyEvents((prev) =>
         prev.map((event) =>
           event.id === editingEvent.id
-            ? {
-                ...event,
-                ...formData,
-                capacity: formData.expectedAudience,
-                facultyInCharge: formData.facultyCoordinator,
-                lastUpdated: new Date().toISOString().split('T')[0],
-              }
+            ? { ...event, ...eventData, lastUpdated: new Date().toISOString().split('T')[0] }
             : event
         )
       );
@@ -84,26 +55,21 @@ const DashboardEventGroup: React.FC = () => {
       // Create new event
       const newEvent: Event = {
         id: Date.now().toString(),
-        title: formData.title,
-        description: formData.description,
-        department: formData.department,
-        category: formData.category,
-        date: formData.date,
-        time: formData.time,
-        venue: formData.venue,
-        capacity: formData.expectedAudience,
-        status: 'Draft',
-        organiserGroup: 'Tech Club',
-        facultyInCharge: formData.facultyCoordinator,
-        isArchived: false,
-        imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=250&fit=crop',
-        tags: [],
+        title: eventData.title || '',
+        club: eventData.club || '',
+        dateTime: eventData.dateTime || new Date().toISOString(),
+        type: eventData.type || '',
+        shortDescription: eventData.shortDescription || '',
+        fullDescription: eventData.fullDescription,
+        status: eventData.status || 'draft',
+        eventGroupId: CURRENT_EVENT_GROUP_ID,
+        venue: eventData.venue,
+        imageUrl: eventData.imageUrl,
         lastUpdated: new Date().toISOString().split('T')[0],
       };
       setMyEvents((prev) => [newEvent, ...prev]);
     }
 
-    setFormData(initialFormData);
     setShowForm(false);
     setEditingEvent(null);
   };
@@ -111,17 +77,6 @@ const DashboardEventGroup: React.FC = () => {
   // Handle edit event
   const handleEdit = (event: Event) => {
     setEditingEvent(event);
-    setFormData({
-      title: event.title,
-      description: event.description,
-      department: event.department,
-      category: event.category,
-      date: event.date,
-      time: event.time,
-      venue: event.venue,
-      expectedAudience: event.capacity,
-      facultyCoordinator: event.facultyInCharge,
-    });
     setShowForm(true);
   };
 
@@ -132,23 +87,83 @@ const DashboardEventGroup: React.FC = () => {
     }
   };
 
-  // Submit event for approval
-  const handleSubmitForApproval = (eventId: string) => {
+  // Publish event (draft -> upcoming)
+  const handlePublish = (eventId: string) => {
     setMyEvents((prev) =>
       prev.map((e) =>
-        e.id === eventId ? { ...e, status: 'Pending Approval' as EventStatus, lastUpdated: new Date().toISOString().split('T')[0] } : e
+        e.id === eventId
+          ? {
+              ...e,
+              status: 'upcoming' as EventStatus,
+              registrationUrl: generateRegistrationUrl(e.id, e.title),
+              lastUpdated: new Date().toISOString().split('T')[0],
+            }
+          : e
       )
     );
   };
 
-  // Format date for display
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+  // Generate new registration link
+  const handleGenerateLink = (eventId: string) => {
+    const event = myEvents.find((e) => e.id === eventId);
+    if (event) {
+      const newUrl = generateRegistrationUrl(eventId, event.title);
+      setMyEvents((prev) =>
+        prev.map((e) =>
+          e.id === eventId ? { ...e, registrationUrl: newUrl, lastUpdated: new Date().toISOString().split('T')[0] } : e
+        )
+      );
+      navigator.clipboard.writeText(newUrl);
+      alert('Registration link generated and copied to clipboard!');
+    }
+  };
+
+  // Mark event as ended
+  const handleMarkEnded = (eventId: string) => {
+    setMyEvents((prev) =>
+      prev.map((e) =>
+        e.id === eventId
+          ? {
+              ...e,
+              status: 'ended' as EventStatus,
+              lastUpdated: new Date().toISOString().split('T')[0],
+            }
+          : e
+      )
+    );
+  };
+
+  // Copy registration link to clipboard
+  const handleCopyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
+    alert('Registration link copied to clipboard!');
+  };
+
+  // Format datetime for display
+  const formatDateTime = (dateTimeStr: string) => {
+    const date = new Date(dateTimeStr);
     return date.toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
     });
+  };
+
+  // Filter events by tab
+  const filteredEvents = myEvents.filter((event) => {
+    if (activeTab === 'all') return true;
+    return event.status === activeTab;
+  });
+
+  // Get counts for tabs
+  const counts = {
+    all: myEvents.length,
+    draft: myEvents.filter((e) => e.status === 'draft').length,
+    upcoming: myEvents.filter((e) => e.status === 'upcoming').length,
+    ended: myEvents.filter((e) => e.status === 'ended').length,
   };
 
   return (
@@ -156,7 +171,7 @@ const DashboardEventGroup: React.FC = () => {
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Event Group Dashboard</h1>
-        <p className="mt-2 text-gray-600">Create and manage your club's events</p>
+        <p className="mt-2 text-gray-600">Create, publish, and manage your club's events</p>
       </div>
 
       {/* Create Event Button */}
@@ -165,7 +180,6 @@ const DashboardEventGroup: React.FC = () => {
           onClick={() => {
             setShowForm(true);
             setEditingEvent(null);
-            setFormData(initialFormData);
           }}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
@@ -189,7 +203,6 @@ const DashboardEventGroup: React.FC = () => {
                   onClick={() => {
                     setShowForm(false);
                     setEditingEvent(null);
-                    setFormData(initialFormData);
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -199,174 +212,38 @@ const DashboardEventGroup: React.FC = () => {
                 </button>
               </div>
             </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter event title"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  required
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Describe your event"
-                />
-              </div>
-
-              {/* Department & Category */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <select
-                    name="department"
-                    value={formData.department}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select Department</option>
-                    {departments.map((dept) => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <input
-                    type="time"
-                    name="time"
-                    value={formData.time}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Venue & Expected Audience */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
-                  <input
-                    type="text"
-                    name="venue"
-                    value={formData.venue}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Event venue"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expected Audience</label>
-                  <input
-                    type="number"
-                    name="expectedAudience"
-                    value={formData.expectedAudience}
-                    onChange={handleInputChange}
-                    required
-                    min={1}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Faculty Coordinator */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Faculty Coordinator</label>
-                <input
-                  type="text"
-                  name="facultyCoordinator"
-                  value={formData.facultyCoordinator}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Name of faculty coordinator"
-                />
-              </div>
-
-              {/* Attachments (dummy) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Attachments</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="text-sm text-gray-500">Drag and drop files here, or click to browse</p>
-                  <p className="text-xs text-gray-400 mt-1">PDF, DOC, or images up to 10MB</p>
-                </div>
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingEvent(null);
-                    setFormData(initialFormData);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {editingEvent ? 'Update Event' : 'Create Event'}
-                </button>
-              </div>
-            </form>
+            <div className="p-6">
+              <EventForm
+                event={editingEvent || undefined}
+                eventGroupId={CURRENT_EVENT_GROUP_ID}
+                onSave={handleSaveEvent}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingEvent(null);
+                }}
+                mode={editingEvent ? 'edit' : 'create'}
+              />
+            </div>
           </div>
         </div>
       )}
+
+      {/* Status Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 w-fit">
+        {(['all', 'draft', 'upcoming', 'ended'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)} ({counts[tab]})
+          </button>
+        ))}
+      </div>
 
       {/* My Events Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -377,16 +254,16 @@ const DashboardEventGroup: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Event Name
+                  Event
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  Date & Time
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Updated
+                  Registration Link
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -394,35 +271,55 @@ const DashboardEventGroup: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {myEvents.map((event) => (
+              {filteredEvents.map((event) => (
                 <tr key={event.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <img
-                        src={event.imageUrl}
+                        src={event.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100'}
                         alt={event.title}
-                        className="w-10 h-10 rounded-lg object-cover mr-3"
+                        className="w-12 h-12 rounded-lg object-cover mr-3"
                       />
                       <div>
-                        <div className="font-medium text-gray-900">{event.title}</div>
-                        <div className="text-sm text-gray-500">{event.category}</div>
+                        <Link to={`/events/${event.id}`} className="font-medium text-gray-900 hover:text-blue-600">
+                          {event.title}
+                        </Link>
+                        <div className="text-sm text-gray-500">{event.club} • {event.type}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[event.status]}`}>
-                      {event.status}
+                      {statusLabels[event.status]}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {formatDate(event.date)}
+                    {formatDateTime(event.dateTime)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {formatDate(event.lastUpdated)}
+                  <td className="px-6 py-4">
+                    {event.registrationUrl ? (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-500 truncate max-w-[150px]" title={event.registrationUrl}>
+                          {event.registrationUrl.substring(0, 30)}...
+                        </span>
+                        <button
+                          onClick={() => handleCopyLink(event.registrationUrl!)}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Copy link"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-sm">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
-                      {event.status === 'Draft' && (
+                      {/* Draft actions */}
+                      {event.status === 'draft' && (
                         <>
                           <button
                             onClick={() => handleEdit(event)}
@@ -437,23 +334,40 @@ const DashboardEventGroup: React.FC = () => {
                             Delete
                           </button>
                           <button
-                            onClick={() => handleSubmitForApproval(event.id)}
-                            className="text-green-600 hover:text-green-800 text-sm font-medium"
+                            onClick={() => handlePublish(event.id)}
+                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
                           >
-                            Submit
+                            Publish
                           </button>
                         </>
                       )}
-                      {event.status === 'Rejected' && (
-                        <button
-                          onClick={() => handleEdit(event)}
+                      
+                      {/* Upcoming actions */}
+                      {event.status === 'upcoming' && (
+                        <>
+                          <button
+                            onClick={() => handleGenerateLink(event.id)}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            New Link
+                          </button>
+                          <button
+                            onClick={() => handleMarkEnded(event.id)}
+                            className="px-3 py-1 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
+                          >
+                            Mark Ended
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Ended actions */}
+                      {event.status === 'ended' && (
+                        <Link
+                          to={`/events/${event.id}`}
                           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                         >
-                          Revise & Resubmit
-                        </button>
-                      )}
-                      {(event.status === 'Pending Approval' || event.status === 'Approved') && (
-                        <span className="text-gray-400 text-sm">No actions</span>
+                          View Gallery
+                        </Link>
                       )}
                     </div>
                   </td>
@@ -463,15 +377,38 @@ const DashboardEventGroup: React.FC = () => {
           </table>
         </div>
 
-        {myEvents.length === 0 && (
+        {filteredEvents.length === 0 && (
           <div className="text-center py-12">
             <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
-            <p className="text-gray-500">Create your first event to get started</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {activeTab === 'all' ? 'No events yet' : `No ${activeTab} events`}
+            </h3>
+            <p className="text-gray-500">
+              {activeTab === 'all' || activeTab === 'draft' ? 'Create your first event to get started' : ''}
+            </p>
           </div>
         )}
+      </div>
+
+      {/* Quick Stats */}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="text-2xl font-bold text-gray-700">{counts.draft}</div>
+          <div className="text-gray-500">Draft Events</div>
+          <p className="text-xs text-gray-400 mt-2">Visible only to you</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="text-2xl font-bold text-green-600">{counts.upcoming}</div>
+          <div className="text-gray-500">Published Events</div>
+          <p className="text-xs text-gray-400 mt-2">Visible on public homepage</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="text-2xl font-bold text-blue-600">{counts.ended}</div>
+          <div className="text-gray-500">Ended Events</div>
+          <p className="text-xs text-gray-400 mt-2">Gallery available</p>
+        </div>
       </div>
     </div>
   );

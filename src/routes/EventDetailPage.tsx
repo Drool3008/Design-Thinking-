@@ -1,13 +1,15 @@
 /**
  * Event Detail Page
- * Full event information page with related events.
- * Shows title, description, organisers, faculty, date/time, venue, etc.
+ * Full event information page with registration link (upcoming) or gallery (ended).
+ * Part of Set 1 workflow.
  */
 
 import React, { useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getEventById, getRelatedEvents } from '../data/events';
+import { initialEvents, getEventById, getUpcomingEvents } from '../data/events';
+import type { EventStatus } from '../data/events';
 import EventCard from '../components/EventCard';
+import EventGallery from '../components/EventGallery';
 import SectionHeading from '../components/SectionHeading';
 
 const EventDetailPage: React.FC = () => {
@@ -17,42 +19,45 @@ const EventDetailPage: React.FC = () => {
   // Get event by ID
   const event = useMemo(() => {
     if (!eventId) return null;
-    return getEventById(eventId);
+    return getEventById(initialEvents, eventId);
   }, [eventId]);
 
-  // Get related events
+  // Get related events (same club or type)
   const relatedEvents = useMemo(() => {
     if (!event) return [];
-    return getRelatedEvents(event);
+    return getUpcomingEvents(initialEvents)
+      .filter((e) => e.id !== event.id && (e.club === event.club || e.type === event.type))
+      .slice(0, 4);
   }, [event]);
 
-  // Format date for display
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-IN', {
+  // Format datetime for display
+  const formatDateTime = (dateTimeStr: string) => {
+    const date = new Date(dateTimeStr);
+    const dateFormatted = date.toLocaleDateString('en-IN', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     });
+    const timeFormatted = date.toLocaleTimeString('en-IN', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return { date: dateFormatted, time: timeFormatted };
   };
 
-  // Format time for display
-  const formatTime = (timeStr: string) => {
-    const [hours, minutes] = timeStr.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+  // Status badge colors for Set 1 workflow
+  const statusColors: Record<EventStatus, string> = {
+    draft: 'bg-gray-100 text-gray-600',
+    upcoming: 'bg-green-100 text-green-700',
+    ended: 'bg-blue-100 text-blue-700',
   };
 
-  // Status badge colors
-  const statusColors: Record<string, string> = {
-    'Draft': 'bg-gray-100 text-gray-600',
-    'Pending Approval': 'bg-yellow-100 text-yellow-700',
-    'Approved': 'bg-green-100 text-green-700',
-    'Rejected': 'bg-red-100 text-red-700',
-    'Completed': 'bg-blue-100 text-blue-700',
+  const statusLabels: Record<EventStatus, string> = {
+    draft: 'Draft',
+    upcoming: 'Upcoming',
+    ended: 'Event Ended',
   };
 
   if (!event) {
@@ -78,6 +83,9 @@ const EventDetailPage: React.FC = () => {
     );
   }
 
+  const { date, time } = formatDateTime(event.dateTime);
+  const imageUrl = event.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=500&fit=crop';
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Back button */}
@@ -100,7 +108,7 @@ const EventDetailPage: React.FC = () => {
             {/* Event Image */}
             <div className="md:w-2/5">
               <img
-                src={event.imageUrl}
+                src={imageUrl}
                 alt={event.title}
                 className="w-full h-64 md:h-full object-cover"
               />
@@ -108,24 +116,26 @@ const EventDetailPage: React.FC = () => {
 
             {/* Event Info */}
             <div className="md:w-3/5 p-6 md:p-8">
-              {/* Status and Category */}
+              {/* Status and Type Badges */}
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[event.status]}`}>
-                  {event.status}
+                  {statusLabels[event.status]}
                 </span>
                 <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                  {event.category}
-                </span>
-                <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                  {event.department}
+                  {event.type}
                 </span>
               </div>
 
               {/* Title */}
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{event.title}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{event.title}</h1>
+              
+              {/* Club */}
+              <p className="text-lg text-blue-600 font-medium mb-4">{event.club}</p>
 
               {/* Description */}
-              <p className="text-gray-600 mb-6 leading-relaxed">{event.description}</p>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                {event.fullDescription || event.shortDescription}
+              </p>
 
               {/* Event Details */}
               <div className="space-y-3 mb-6">
@@ -134,49 +144,28 @@ const EventDetailPage: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <div>
-                    <div className="font-medium text-gray-900">{formatDate(event.date)}</div>
-                    <div className="text-gray-500">{formatTime(event.time)}</div>
+                    <div className="font-medium text-gray-900">{date}</div>
+                    <div className="text-gray-500">{time}</div>
                   </div>
                 </div>
 
-                <div className="flex items-start">
-                  <svg className="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <div>
-                    <div className="font-medium text-gray-900">{event.venue}</div>
-                    <div className="text-gray-500">Capacity: {event.capacity} attendees</div>
+                {event.venue && (
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div>
+                      <div className="font-medium text-gray-900">{event.venue}</div>
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex items-start">
-                  <svg className="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <div>
-                    <div className="font-medium text-gray-900">Organised by: {event.organiserGroup}</div>
-                    <div className="text-gray-500">Faculty In Charge: {event.facultyInCharge}</div>
-                  </div>
-                </div>
+                )}
               </div>
 
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {event.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Registration Button */}
-              {event.status === 'Approved' && event.registrationLink && (
+              {/* Registration Button for upcoming events */}
+              {event.status === 'upcoming' && event.registrationUrl && (
                 <a
-                  href={event.registrationLink}
+                  href={event.registrationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
@@ -187,9 +176,24 @@ const EventDetailPage: React.FC = () => {
                   </svg>
                 </a>
               )}
+
+              {/* Message for ended events without registration */}
+              {event.status === 'ended' && (
+                <div className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-lg">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  This event has ended
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Event Gallery for ended events */}
+        {event.status === 'ended' && event.mediaLinks && (
+          <EventGallery mediaLinks={event.mediaLinks} eventTitle={event.title} />
+        )}
       </div>
 
       {/* Related Events Section */}
