@@ -2,7 +2,7 @@
 
 This guide will help you set up the College Event Management Portal on your local machine after cloning from GitHub.
 
----
+
 
 ## Prerequisites
 
