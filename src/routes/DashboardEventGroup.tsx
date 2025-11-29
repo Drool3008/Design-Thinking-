@@ -27,17 +27,19 @@ const DashboardEventGroup: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'draft' | 'upcoming' | 'ended'>('all');
 
-  // Status badge colors for Set 1 workflow
+  // Status badge colors for Set 1 + Set 2 workflow
   const statusColors: Record<EventStatus, string> = {
     draft: 'bg-gray-100 text-gray-700',
     upcoming: 'bg-green-100 text-green-700',
     ended: 'bg-blue-100 text-blue-700',
+    archived: 'bg-purple-100 text-purple-700',
   };
 
   const statusLabels: Record<EventStatus, string> = {
     draft: 'Draft',
     upcoming: 'Published',
     ended: 'Ended',
+    archived: 'Archived',
   };
 
   // Handle save from EventForm

@@ -1,166 +1,256 @@
 /**
- * Archiver Dashboard - Set 1 Workflow
+ * Archiver Dashboard - Set 2 Workflow
  * 
- * Note: In Set 1 workflow, Archiver can view ended events and manage media galleries.
+ * Dashboard for Archivers to manage ended events:
+ * - View all ended events
+ * - Navigate to per-event archival management
+ * - Track archival progress
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { initialEvents, getEndedEvents } from '../data/events';
-import SectionHeading from '../components/SectionHeading';
+import { initialEvents, getEndedEvents, getArchivedEvents, type Event } from '../data/events';
 
 const DashboardArchiver: React.FC = () => {
-  // Get ended events
-  const endedEvents = useMemo(() => getEndedEvents(initialEvents), []);
+  const [activeTab, setActiveTab] = useState<'pending' | 'archived'>('pending');
 
-  const formatDateTime = (dateTimeStr: string) => {
-    const date = new Date(dateTimeStr);
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
+  // Get ended and archived events
+  const endedEvents = useMemo(() => getEndedEvents(initialEvents), []);
+  const archivedEvents = useMemo(() => getArchivedEvents(initialEvents), []);
+  
+  // Pending = ended but not yet fully archived
+  const pendingEvents = useMemo(() => 
+    endedEvents.filter(e => e.status !== 'archived'),
+    [endedEvents]
+  );
+
+  // Stats
+  const stats = useMemo(() => ({
+    totalEnded: endedEvents.length + archivedEvents.length,
+    fullyArchived: archivedEvents.length,
+    pendingArchival: pendingEvents.length,
+  }), [endedEvents, archivedEvents, pendingEvents]);
+
+  // Format date/time
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
       month: 'short',
+      day: 'numeric',
       year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
     });
   };
 
+  // Get archival status for display
+  const getArchivalStatus = (event: Event): { label: string; color: string } => {
+    if (event.status === 'archived') {
+      return { label: 'Archived', color: 'bg-green-100 text-green-800' };
+    }
+    
+    if (!event.archival) {
+      return { label: 'Not Started', color: 'bg-gray-100 text-gray-800' };
+    }
+
+    const { cleaned, validated, summary, finalizedAt } = event.archival;
+    
+    if (finalizedAt) {
+      return { label: 'Finalized', color: 'bg-green-100 text-green-800' };
+    }
+    if (summary) {
+      return { label: 'Summary Ready', color: 'bg-blue-100 text-blue-800' };
+    }
+    if (validated) {
+      return { label: 'Validated', color: 'bg-purple-100 text-purple-800' };
+    }
+    if (cleaned) {
+      return { label: 'Cleaned', color: 'bg-yellow-100 text-yellow-800' };
+    }
+    
+    return { label: 'In Progress', color: 'bg-orange-100 text-orange-800' };
+  };
+
+  // Display events based on active tab
+  const displayedEvents = activeTab === 'pending' ? pendingEvents : archivedEvents;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Archiver Dashboard</h1>
-        <p className="mt-2 text-gray-600">Manage past events and media galleries</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Archiver Dashboard</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Manage event archival: upload windows, content cleaning, validation, and publishing
+        </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Total Ended Events</p>
-              <p className="text-2xl font-bold text-gray-900">{endedEvents.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">With Gallery</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {endedEvents.filter(e => e.mediaLinks && e.mediaLinks.photos.length > 0).length}
-              </p>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Ended Events</dt>
+                  <dd className="text-2xl font-semibold text-gray-900">{stats.totalEnded}</dd>
+                </dl>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Fully Archived</dt>
+                  <dd className="text-2xl font-semibold text-green-600">{stats.fullyArchived}</dd>
+                </dl>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Pending Gallery</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {endedEvents.filter(e => !e.mediaLinks || e.mediaLinks.photos.length === 0).length}
-              </p>
+          </div>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Pending Archival</dt>
+                  <dd className="text-2xl font-semibold text-orange-600">{stats.pendingArchival}</dd>
+                </dl>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Ended Events Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <SectionHeading title="Past Events" subtitle="Manage event archives and galleries" />
-        
-        <div className="overflow-x-auto">
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'pending'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Pending Archival ({pendingEvents.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('archived')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'archived'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Fully Archived ({archivedEvents.length})
+          </button>
+        </nav>
+      </div>
+
+      {/* Events Table */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        {displayedEvents.length === 0 ? (
+          <div className="text-center py-12">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No events</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {activeTab === 'pending' 
+                ? 'No events pending archival.' 
+                : 'No archived events yet.'}
+            </p>
+          </div>
+        ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Event
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Club / Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Gallery Status
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Event Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Archival Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {endedEvents.map((event) => (
-                <tr key={event.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <img
-                        src={event.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100'}
-                        alt={event.title}
-                        className="w-12 h-12 rounded-lg object-cover mr-3"
-                      />
-                      <div>
-                        <div className="font-medium text-gray-900">{event.title}</div>
-                        <div className="text-sm text-gray-500">{event.club} • {event.type}</div>
+              {displayedEvents.map((event) => {
+                const archivalStatus = getArchivalStatus(event);
+                return (
+                  <tr key={event.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-12 w-12">
+                          <img
+                            className="h-12 w-12 rounded-lg object-cover"
+                            src={event.imageUrl}
+                            alt={event.title}
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{event.title}</div>
+                          <div className="text-sm text-gray-500">{event.venue}</div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {formatDateTime(event.dateTime)}
-                  </td>
-                  <td className="px-6 py-4">
-                    {event.mediaLinks && event.mediaLinks.photos.length > 0 ? (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-                        {event.mediaLinks.photos.length} photos
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{event.club}</div>
+                      <div className="text-sm text-gray-500 capitalize">{event.type}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDateTime(event.dateTime)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${archivalStatus.color}`}>
+                        {archivalStatus.label}
                       </span>
-                    ) : (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
-                        No gallery
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-3">
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link
-                        to={`/events/${event.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        to={`/dashboard/archiver/${event.id}`}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
-                        View
+                        Manage Archive
                       </Link>
-                      <button className="text-gray-600 hover:text-gray-800 text-sm font-medium">
-                        Upload Media
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-        </div>
-
-        {endedEvents.length === 0 && (
-          <div className="text-center py-12">
-            <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No past events</h3>
-            <p className="text-gray-500">Past events will appear here for archiving</p>
-          </div>
         )}
       </div>
     </div>

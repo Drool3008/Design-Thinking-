@@ -1,7 +1,7 @@
 /**
  * Event Detail Page
- * Full event information page with registration link (upcoming) or gallery (ended).
- * Part of Set 1 workflow.
+ * Full event information page with registration link (upcoming) or gallery (ended/archived).
+ * Updated for Set 2 workflow - now shows archival summary for archived events.
  */
 
 import React, { useMemo } from 'react';
@@ -47,17 +47,19 @@ const EventDetailPage: React.FC = () => {
     return { date: dateFormatted, time: timeFormatted };
   };
 
-  // Status badge colors for Set 1 workflow
+  // Status badge colors for Set 1 + Set 2 workflow
   const statusColors: Record<EventStatus, string> = {
     draft: 'bg-gray-100 text-gray-600',
     upcoming: 'bg-green-100 text-green-700',
-    ended: 'bg-blue-100 text-blue-700',
+    ended: 'bg-amber-100 text-amber-700',
+    archived: 'bg-blue-100 text-blue-700',
   };
 
   const statusLabels: Record<EventStatus, string> = {
     draft: 'Draft',
     upcoming: 'Upcoming',
     ended: 'Event Ended',
+    archived: 'Archived',
   };
 
   if (!event) {
@@ -179,19 +181,55 @@ const EventDetailPage: React.FC = () => {
 
               {/* Message for ended events without registration */}
               {event.status === 'ended' && (
-                <div className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-lg">
+                <div className="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-700 rounded-lg">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   This event has ended
                 </div>
               )}
+
+              {/* Message for archived events */}
+              {event.status === 'archived' && (
+                <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                  Event Archived
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Event Gallery for ended events */}
-        {event.status === 'ended' && event.mediaLinks && (
+        {/* Archival Summary for archived events */}
+        {event.status === 'archived' && event.archival?.summary && (
+          <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Event Summary</h3>
+                <p className="text-gray-700 leading-relaxed">{event.archival.summary}</p>
+                {event.archival.finalizedAt && (
+                  <p className="text-sm text-gray-500 mt-3">
+                    Archived on {new Date(event.archival.finalizedAt).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Event Gallery for ended and archived events */}
+        {(event.status === 'ended' || event.status === 'archived') && event.mediaLinks && (
           <EventGallery mediaLinks={event.mediaLinks} eventTitle={event.title} />
         )}
       </div>
