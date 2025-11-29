@@ -99,25 +99,25 @@ View Ended Events → Review Event Group Content → Add More Media → Clean �
 Here's how an event flows through the system from start to finish:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                                                                         │
-│  📝 DRAFT                                                               │
-│  Event Group creates event (only they can see it)                      │
-│                          ↓                                              │
-│  📢 UPCOMING (Published)                                                │
-│  Event is visible to everyone, registration open                       │
-│                          ↓                                              │
-│  🎉 Event Actually Happens (in real life)                              │
-│                          ↓                                              │
-│  ⏹️ ENDED                                                               │
-│  Event Group marks it as ended, uploads content                        │
-│  Archiver can now work on it                                           │
-│                          ↓                                              │
-│  📚 ARCHIVED                                                            │
-│  Archiver finalizes everything                                         │
-│  Complete gallery and summary available to all                         │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────
+│                                                                         
+│  📝 DRAFT                                                               
+│  Event Group creates event (only they can see it)                      
+│                          ↓                                              
+│  📢 UPCOMING (Published)                                                
+│  Event is visible to everyone, registration open                       
+│                          ↓                                              
+│  🎉 Event Actually Happens (in real life)                              
+│                          ↓                                              
+│  ⏹️ ENDED                                                               
+│  Event Group marks it as ended, uploads content                        
+│  Archiver can now work on it                                           
+│                          ↓                                              
+│  📚 ARCHIVED                                                            
+│  Archiver finalizes everything                                         
+│  Complete gallery and summary available to all                         
+│                                                                         
+└─────────────────────────────────────────────────────────────────────────
 ```
 
 ---
