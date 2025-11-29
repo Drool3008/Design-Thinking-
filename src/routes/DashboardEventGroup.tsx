@@ -1,5 +1,5 @@
 /**
- * Event Group Dashboard - Set 1 Workflow
+ * Event Group Dashboard - Set 1 + Set 3 Workflow
  * Dashboard for event group members to create and manage their events.
  * 
  * Set 1 Workflow:
@@ -7,13 +7,19 @@
  * 2. Publish events (makes them visible on public homepage as "upcoming")
  * 3. Generate registration links for published events
  * 4. Mark events as ended (gallery becomes available)
+ * 
+ * Set 3 Additions:
+ * - Capture event content (photos, videos, audio, text notes)
+ * - Mark faculty attendance
  */
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { initialEvents, type Event, type EventStatus, generateRegistrationUrl } from '../data/events';
+import { initialEvents, type Event, type EventStatus, type EventGroupMedia, type FacultyAttendance, generateRegistrationUrl } from '../data/events';
 import EventForm from '../components/EventForm';
 import SectionHeading from '../components/SectionHeading';
+import EventGroupContentCapture from '../components/EventGroupContentCapture';
+import FacultyAttendanceManager from '../components/FacultyAttendanceManager';
 
 // Current event group ID (in real app, comes from auth context)
 const CURRENT_EVENT_GROUP_ID = 'eg-robotics';
@@ -26,6 +32,9 @@ const DashboardEventGroup: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'draft' | 'upcoming' | 'ended'>('all');
+  // Set 3: Event management modal state
+  const [managingEvent, setManagingEvent] = useState<Event | null>(null);
+  const [manageTab, setManageTab] = useState<'content' | 'attendance'>('content');
 
   // Status badge colors for Set 1 + Set 2 workflow
   const statusColors: Record<EventStatus, string> = {
@@ -40,6 +49,55 @@ const DashboardEventGroup: React.FC = () => {
     upcoming: 'Published',
     ended: 'Ended',
     archived: 'Archived',
+  };
+
+  // Set 3: Handle content capture updates
+  const handleMediaChange = (eventId: string, media: EventGroupMedia) => {
+    setMyEvents(prev => prev.map(e => {
+      if (e.id === eventId) {
+        return {
+          ...e,
+          mediaLinks: {
+            ...e.mediaLinks,
+            photos: e.mediaLinks?.photos || [],
+            videos: e.mediaLinks?.videos || [],
+            eventGroup: media,
+          },
+          lastUpdated: new Date().toISOString().split('T')[0],
+        };
+      }
+      return e;
+    }));
+    // Update managingEvent as well
+    if (managingEvent && managingEvent.id === eventId) {
+      setManagingEvent(prev => prev ? {
+        ...prev,
+        mediaLinks: {
+          ...prev.mediaLinks,
+          photos: prev.mediaLinks?.photos || [],
+          videos: prev.mediaLinks?.videos || [],
+          eventGroup: media,
+        },
+      } : null);
+    }
+  };
+
+  // Set 3: Handle faculty attendance updates
+  const handleAttendanceChange = (eventId: string, attendance: FacultyAttendance) => {
+    setMyEvents(prev => prev.map(e => {
+      if (e.id === eventId) {
+        return {
+          ...e,
+          facultyAttendance: attendance,
+          lastUpdated: new Date().toISOString().split('T')[0],
+        };
+      }
+      return e;
+    }));
+    // Update managingEvent as well
+    if (managingEvent && managingEvent.id === eventId) {
+      setManagingEvent(prev => prev ? { ...prev, facultyAttendance: attendance } : null);
+    }
   };
 
   // Handle save from EventForm
@@ -230,6 +288,93 @@ const DashboardEventGroup: React.FC = () => {
         </div>
       )}
 
+      {/* Set 3: Event Management Modal (Content Capture & Faculty Attendance) */}
+      {managingEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white p-6 border-b border-gray-200 z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Manage Event</h2>
+                  <p className="text-sm text-gray-500">{managingEvent.title}</p>
+                </div>
+                <button
+                  onClick={() => setManagingEvent(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex mt-4 border-b border-gray-200 -mb-6">
+                <button
+                  onClick={() => setManageTab('content')}
+                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    manageTab === 'content'
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Captured Content
+                </button>
+                <button
+                  onClick={() => setManageTab('attendance')}
+                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    manageTab === 'attendance'
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Faculty Attendance
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {manageTab === 'content' && (
+                <EventGroupContentCapture
+                  media={managingEvent.mediaLinks?.eventGroup || {
+                    photos: [],
+                    videos: [],
+                    audio: [],
+                    textNotes: [],
+                  }}
+                  onMediaChange={(media) => handleMediaChange(managingEvent.id, media)}
+                />
+              )}
+
+              {manageTab === 'attendance' && (
+                <FacultyAttendanceManager
+                  attendance={managingEvent.facultyAttendance || {}}
+                  onAttendanceChange={(attendance) => handleAttendanceChange(managingEvent.id, attendance)}
+                />
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setManagingEvent(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Status Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 w-fit">
         {(['all', 'draft', 'upcoming', 'ended'] as const).map((tab) => (
@@ -362,14 +507,25 @@ const DashboardEventGroup: React.FC = () => {
                         </>
                       )}
                       
-                      {/* Ended actions */}
+                      {/* Ended actions - Set 3: Added Manage Event button */}
                       {event.status === 'ended' && (
-                        <Link
-                          to={`/events/${event.id}`}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                        >
-                          View Gallery
-                        </Link>
+                        <>
+                          <button
+                            onClick={() => {
+                              setManagingEvent(event);
+                              setManageTab('content');
+                            }}
+                            className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+                          >
+                            Manage Event
+                          </button>
+                          <Link
+                            to={`/events/${event.id}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            View Gallery
+                          </Link>
+                        </>
                       )}
                     </div>
                   </td>

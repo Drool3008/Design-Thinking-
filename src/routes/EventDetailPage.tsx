@@ -2,19 +2,30 @@
  * Event Detail Page
  * Full event information page with registration link (upcoming) or gallery (ended/archived).
  * Updated for Set 2 workflow - now shows archival summary for archived events.
+ * Updated for Set 3 workflow - faculty-only visibility of attendees with flashcards and meeting requests.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { initialEvents, getEventById, getUpcomingEvents } from '../data/events';
 import type { EventStatus } from '../data/events';
+import { useAuth } from '../context/AuthContext';
+import { getFacultyById, facultyMembers } from '../data/faculty';
+import type { Faculty } from '../data/faculty';
 import EventCard from '../components/EventCard';
 import EventGallery from '../components/EventGallery';
 import SectionHeading from '../components/SectionHeading';
+import FacultyFlashCard from '../components/FacultyFlashCard';
+import RequestMeetingModal from '../components/RequestMeetingModal';
 
 const EventDetailPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  // State for faculty meeting request modal
+  const [meetingModalOpen, setMeetingModalOpen] = useState(false);
+  const [selectedFacultyForMeeting, setSelectedFacultyForMeeting] = useState<Faculty | null>(null);
 
   // Get event by ID
   const event = useMemo(() => {
@@ -231,6 +242,70 @@ const EventDetailPage: React.FC = () => {
         {/* Event Gallery for ended and archived events */}
         {(event.status === 'ended' || event.status === 'archived') && event.mediaLinks && (
           <EventGallery mediaLinks={event.mediaLinks} eventTitle={event.title} />
+        )}
+
+        {/* Faculty Attendees Section - Only visible to faculty */}
+        {role === 'faculty' && (event.status === 'ended' || event.status === 'archived') && event.facultyAttendance && (
+          <div className="mt-8 bg-white rounded-2xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Faculty Attendees</h3>
+                <p className="text-sm text-gray-500">
+                  {Object.values(event.facultyAttendance).filter(Boolean).length} faculty members attended
+                </p>
+              </div>
+            </div>
+
+            {/* Faculty Flashcards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Object.entries(event.facultyAttendance)
+                .filter(([, attended]) => attended)
+                .map(([facultyId]) => {
+                  const faculty = getFacultyById(facultyId);
+                  if (!faculty) return null;
+                  return (
+                    <FacultyFlashCard
+                      key={faculty.id}
+                      faculty={faculty}
+                      showMeetingButton={true}
+                      onRequestMeeting={() => {
+                        setSelectedFacultyForMeeting(faculty);
+                        setMeetingModalOpen(true);
+                      }}
+                    />
+                  );
+                })}
+            </div>
+
+            {Object.values(event.facultyAttendance).filter(Boolean).length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No faculty attendance recorded for this event.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Request Meeting Modal */}
+        {selectedFacultyForMeeting && (
+          <RequestMeetingModal
+            isOpen={meetingModalOpen}
+            onClose={() => {
+              setMeetingModalOpen(false);
+              setSelectedFacultyForMeeting(null);
+            }}
+            recipientFaculty={selectedFacultyForMeeting}
+            senderFaculty={
+              // In a real app, this would come from the logged-in faculty's profile
+              // Using first faculty member as mock current user
+              facultyMembers[0]
+            }
+            eventTitle={event.title}
+          />
         )}
       </div>
 
