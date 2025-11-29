@@ -1,21 +1,48 @@
 /**
  * Mock data for events in the college event management portal.
- * Updated for Set 1 workflow: Event Group creates drafts, publishes to website.
+ * Updated for Set 1 + Set 2 + Set 3 workflows.
  * 
  * Event Lifecycle:
  * 1. Event Group creates draft event (status: "draft") - visible only in their dashboard
  * 2. Event Group publishes event (status: "upcoming") - visible on public homepage
  * 3. After event ends (status: "ended") - gallery section becomes available
+ * 4. Archiver manages archive workflow - cleans, validates, generates summary
+ * 5. Archive is finalized (status: "archived") - public can view with summary
+ * 
+ * Set 3 additions:
+ * - Event Group can capture content (photos, videos, audio, text notes)
+ * - Event Group can mark faculty attendance
+ * - Faculty can view attendance list with flashcards
+ * - Faculty can request meetings via mock Outlook draft
  */
 
 // Event status for Set 1 workflow
 export type EventStatus = 'draft' | 'upcoming' | 'ended' | 'archived';
 
-// Media links for ended events (gallery)
-export interface MediaLinks {
+// Set 3: Event Group captured media
+export interface EventGroupMedia {
   photos: string[];
   videos: string[];
-  documents?: string[];  // Set 2: Support for document URLs
+  audio: string[];
+  textNotes: string[];
+}
+
+// Set 3: Archiver managed media
+export interface ArchiverMedia {
+  photos: string[];
+  videos: string[];
+  documents: string[];
+}
+
+// Combined media links for events (Set 2 + Set 3 restructured)
+export interface MediaLinks {
+  // Legacy flat structure for backward compatibility
+  photos: string[];
+  videos: string[];
+  documents?: string[];
+  // Set 3: Separated by source
+  eventGroup?: EventGroupMedia;
+  archiver?: ArchiverMedia;
 }
 
 // Set 2: Archival information for ended events
@@ -28,7 +55,12 @@ export interface ArchivalInfo {
   finalizedAt?: string;             // When archive was finalized
 }
 
-// Main Event interface for Set 1 + Set 2
+// Set 3: Faculty attendance tracking
+export interface FacultyAttendance {
+  [facultyId: string]: boolean;  // true = attended
+}
+
+// Main Event interface for Set 1 + Set 2 + Set 3
 export interface Event {
   id: string;
   title: string;
@@ -45,6 +77,7 @@ export interface Event {
   venue?: string;            // Event location
   lastUpdated: string;       // Last modification date
   archival?: ArchivalInfo;   // Set 2: Archival workflow data
+  facultyAttendance?: FacultyAttendance;  // Set 3: Faculty attendance tracking
 }
 
 // Available clubs for filtering and selection
@@ -190,6 +223,16 @@ export const initialEvents: Event[] = [
       documents: [
         'https://example.com/docs/photography-walk-guide.pdf',
       ],
+      // Set 3: Event Group captured content
+      eventGroup: {
+        photos: [
+          'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+          'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=800',
+        ],
+        videos: [],
+        audio: ['https://example.com/audio/photography-tips.mp3'],
+        textNotes: ['Great turnout! 35 participants joined the early morning session.', 'Weather was perfect for golden hour shots.'],
+      },
     },
     archival: {
       uploadWindowExpiresAt: '2024-10-25T23:59:59',
@@ -198,6 +241,12 @@ export const initialEvents: Event[] = [
       validated: true,
       summary: 'The Photography Walk 2024 was a successful morning event where 35 participants explored the campus during golden hour. Key highlights included a photography basics workshop, hands-on guidance on composition and lighting, and a community photo review session. The event captured beautiful moments of campus life and nature.',
       finalizedAt: '2024-10-28',
+    },
+    // Set 3: Faculty attendance
+    facultyAttendance: {
+      'fac-001': true,
+      'fac-003': true,
+      'fac-005': false,
     },
     lastUpdated: '2024-10-28',
   },
@@ -222,12 +271,28 @@ export const initialEvents: Event[] = [
         'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       ],
       documents: [],
+      // Set 3: Event Group captured content
+      eventGroup: {
+        photos: [
+          'https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0?w=800',
+        ],
+        videos: ['https://www.youtube.com/watch?v=sample-hackathon'],
+        audio: [],
+        textNotes: ['50+ teams participated', 'Winners: AI accessibility tool by Team Alpha', 'Second place: Sustainable farming app by Team Green'],
+      },
     },
     archival: {
       uploadWindowExpiresAt: '2025-12-15T23:59:59',
       isUploadWindowExpired: false,
       cleaned: false,
       validated: false,
+    },
+    // Set 3: Faculty attendance
+    facultyAttendance: {
+      'fac-002': true,
+      'fac-004': true,
+      'fac-001': false,
+      'fac-006': true,
     },
     lastUpdated: '2024-09-25',
   },
