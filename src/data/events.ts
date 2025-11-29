@@ -1,6 +1,6 @@
 /**
  * Mock data for events in the college event management portal.
- * Updated for Set 1 + Set 2 + Set 3 workflows.
+ * Updated for Set 1 + Set 2 + Set 3 + Set 4 workflows.
  * 
  * Event Lifecycle:
  * 1. Event Group creates draft event (status: "draft") - visible only in their dashboard
@@ -14,6 +14,12 @@
  * - Event Group can mark faculty attendance
  * - Faculty can view attendance list with flashcards
  * - Faculty can request meetings via mock Outlook draft
+ * 
+ * Set 4 additions:
+ * - Demo event with mixed relevant/irrelevant content
+ * - Raw text notes, cleaned text notes, 20-line summary
+ * - Upload window "Close Now" functionality
+ * - Click-to-open faculty flashcards (instead of hover)
  */
 
 // Event status for Set 1 workflow
@@ -34,7 +40,7 @@ export interface ArchiverMedia {
   documents: string[];
 }
 
-// Combined media links for events (Set 2 + Set 3 restructured)
+// Combined media links for events (Set 2 + Set 3 + Set 4 restructured)
 export interface MediaLinks {
   // Legacy flat structure for backward compatibility
   photos: string[];
@@ -43,16 +49,21 @@ export interface MediaLinks {
   // Set 3: Separated by source
   eventGroup?: EventGroupMedia;
   archiver?: ArchiverMedia;
+  // Set 4: Raw and cleaned text notes for archival workflow
+  rawTextNotes?: string[];      // List of long paragraphs (relevant + irrelevant)
+  cleanedTextNotes?: string[];  // After "clean" step - only relevant content
+  summary20Lines?: string;      // Generated summary (~20 lines) after summary step
 }
 
 // Set 2: Archival information for ended events
 export interface ArchivalInfo {
   uploadWindowExpiresAt?: string;   // ISO timestamp for upload window expiration
-  isUploadWindowExpired?: boolean;  // Computed from expiration timestamp
+  isUploadWindowExpired?: boolean;  // Computed from expiration timestamp OR manual close
   cleaned?: boolean;                // Whether content has been cleaned (mock AI)
   validated?: boolean;              // Whether content has been validated
   summary?: string;                 // AI-generated summary (mock)
   finalizedAt?: string;             // When archive was finalized
+  closedManually?: boolean;         // Set 4: Whether upload window was closed via "Close Now"
 }
 
 // Set 3: Faculty attendance tracking
@@ -60,7 +71,7 @@ export interface FacultyAttendance {
   [facultyId: string]: boolean;  // true = attended
 }
 
-// Main Event interface for Set 1 + Set 2 + Set 3
+// Main Event interface for Set 1 + Set 2 + Set 3 + Set 4
 export interface Event {
   id: string;
   title: string;
@@ -344,6 +355,117 @@ export const initialEvents: Event[] = [
     eventGroupId: 'eg-coding',
     venue: 'Computer Lab 1',
     lastUpdated: '2025-11-27',
+  },
+
+  // SET 4: DEMO EVENT - Hardcoded event for archival workflow demonstration
+  // Contains mixed relevant/irrelevant content for cleaning demonstration
+  {
+    id: 'demo-event-1',
+    title: 'AI Innovation Summit 2024 - Demo Event',
+    club: 'AI/ML Club',
+    dateTime: '2024-11-20T09:00:00',
+    type: 'Seminar',
+    shortDescription: 'A comprehensive AI summit featuring talks, workshops, and networking. This is a demo event for archival workflow.',
+    fullDescription: 'The AI Innovation Summit 2024 brought together industry leaders, researchers, and students to explore the latest trends in artificial intelligence. The event featured keynote speeches, hands-on workshops, panel discussions, and networking sessions. Topics covered included Large Language Models, Computer Vision, Responsible AI, and Career Opportunities in AI.',
+    status: 'ended',
+    eventGroupId: 'eg-aiml',
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=250&fit=crop',
+    venue: 'Main Auditorium & Tech Labs',
+    mediaLinks: {
+      // Legacy flat structure
+      photos: [
+        // Relevant photos
+        'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800', // Conference setting
+        'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800', // Event audience
+        'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800', // Tech presentation
+        // Irrelevant photos (for cleaning demo)
+        'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800', // Random cat
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800', // Random food
+        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800', // Random portrait
+      ],
+      videos: [
+        // Relevant videos
+        'https://www.youtube.com/watch?v=demo-keynote-speech',
+        'https://www.youtube.com/watch?v=demo-workshop-recording',
+        // Irrelevant videos (for cleaning demo)
+        'https://www.youtube.com/watch?v=random-music-video',
+        'https://www.youtube.com/watch?v=random-gameplay',
+      ],
+      documents: [
+        'https://example.com/docs/ai-summit-agenda.pdf',
+        'https://example.com/docs/speaker-presentations.zip',
+      ],
+      // Set 3: Event Group captured content
+      eventGroup: {
+        photos: [
+          'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800', // Workshop session
+          'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800', // Networking
+        ],
+        videos: ['https://www.youtube.com/watch?v=event-group-highlights'],
+        audio: ['https://example.com/audio/panel-discussion.mp3'],
+        textNotes: [
+          'Opening ceremony started at 9:00 AM sharp with over 500 attendees.',
+          'Dr. Sharma\'s keynote on LLMs was the highlight of the morning session.',
+        ],
+      },
+      // Set 4: Raw text notes for archival workflow demo (10-12 paragraphs, mixed relevant/irrelevant)
+      rawTextNotes: [
+        // Relevant paragraph 1
+        'The AI Innovation Summit 2024 commenced with an inspiring opening ceremony. The event saw participation from over 500 students, 50 faculty members, and 20 industry professionals. The Vice Chancellor delivered the welcome address, emphasizing the importance of AI in shaping the future of education and industry.',
+        
+        // Relevant paragraph 2
+        'Dr. Priya Sharma from Google Research delivered the keynote speech on "The Future of Large Language Models". She discussed the evolution from GPT-3 to GPT-4 and beyond, highlighting the potential applications in healthcare, education, and scientific research. The audience was particularly engaged during the Q&A session.',
+        
+        // Irrelevant paragraph 3 (Lorem ipsum)
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit.',
+        
+        // Relevant paragraph 4
+        'The hands-on workshop session on Computer Vision attracted significant interest. Participants learned to build image classification models using PyTorch and TensorFlow. The workshop included practical exercises on object detection and facial recognition, with real-world datasets provided for experimentation.',
+        
+        // Irrelevant paragraph 5 (Random text)
+        'The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump! The five boxing wizards jump quickly. Sphinx of black quartz, judge my vow. Two driven jocks help fax my big quiz.',
+        
+        // Relevant paragraph 6
+        'A panel discussion on "Responsible AI and Ethics" featured experts from academia and industry. Key topics included bias in AI systems, privacy concerns, and the need for transparent algorithms. The panelists agreed that ethical considerations must be integrated into AI development from the ground up.',
+        
+        // Relevant paragraph 7
+        'The networking lunch provided an excellent opportunity for students to interact with industry professionals. Several students received internship offers on the spot. Companies like TCS, Infosys, and startups like AI4Good were actively recruiting.',
+        
+        // Irrelevant paragraph 8 (Unrelated content)
+        'Yesterday I went to the grocery store and bought some apples, oranges, and bananas. The weather was nice so I decided to walk instead of taking the bus. On my way back, I saw a beautiful rainbow in the sky. It reminded me of my childhood when I used to chase rainbows.',
+        
+        // Relevant paragraph 9
+        'The afternoon session featured a startup showcase where 10 AI-focused startups presented their innovations. Notable presentations included an AI-powered medical diagnosis tool, a smart agriculture monitoring system, and an automated content moderation platform. Three startups received seed funding commitments.',
+        
+        // Relevant paragraph 10
+        'Professor Rajesh Kumar conducted a session on "Career Paths in AI/ML". He outlined various roles including ML Engineer, Data Scientist, AI Researcher, and AI Ethics Consultant. Students received guidance on required skills, certifications, and recommended learning paths.',
+        
+        // Irrelevant paragraph 11 (Test data)
+        'Test test test. This is a test paragraph that should be removed during cleaning. AAAA BBBB CCCC DDDD. 1234567890. Random characters: @#$%^&*(). This content has no relevance to the AI Summit event whatsoever.',
+        
+        // Relevant paragraph 12
+        'The closing ceremony recognized outstanding contributions. Best Paper Award went to the team from Computer Science department for their work on federated learning. The event concluded with a commitment to make the AI Summit an annual tradition, with next year\'s theme announced as "AI for Social Good".',
+      ],
+      // These will be populated after cleaning (initially empty)
+      cleanedTextNotes: [],
+      summary20Lines: '',
+    },
+    archival: {
+      uploadWindowExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+      isUploadWindowExpired: false,
+      cleaned: false,
+      validated: false,
+    },
+    // Faculty attendance for demo
+    facultyAttendance: {
+      'fac-001': true,  // Dr. Priya Sharma
+      'fac-002': true,  // Dr. Rajesh Kumar
+      'fac-003': true,  // Dr. Anita Desai
+      'fac-004': false,
+      'fac-005': true,  // Dr. Kavitha Nair
+      'fac-006': true,  // Dr. Suresh Menon
+    },
+    lastUpdated: '2024-11-25',
   },
 ];
 

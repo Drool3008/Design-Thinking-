@@ -1,17 +1,23 @@
 /**
- * Archival Actions Component - Set 2
+ * Archival Actions Component - Set 2 + Set 4 + Set 5
  * 
- * Component with Clean Content, Validate, Generate Summary, and Finalize buttons
- * with mock AI flows for the archiver workflow.
+ * Component with Clean Content, Validate, Generate Summary, Finalize buttons,
+ * and Newsletter Draft generation with mock AI flows for the archiver workflow.
+ * 
+ * Set 4: Enhanced with rawTextNotes cleaning and 20-line summary generation.
+ * Set 5: Added Newsletter Draft step after finalization.
  */
 
 import React, { useState } from 'react';
 import type { Event, ArchivalInfo } from '../data/events';
+import type { Faculty } from '../data/faculty';
+import NewsletterDraftModal from './NewsletterDraftModal';
 
 interface ArchivalActionsProps {
   event: Event;
   onUpdateArchival: (archival: ArchivalInfo) => void;
   onFinalize: () => void;
+  faculty?: Faculty[];  // Set 5: For newsletter generation
 }
 
 type ArchivalStep = 'upload' | 'cleaning' | 'cleaned' | 'validating' | 'validated' | 'generating' | 'generated' | 'finalizing' | 'finalized';
@@ -20,6 +26,7 @@ const ArchivalActions: React.FC<ArchivalActionsProps> = ({
   event,
   onUpdateArchival,
   onFinalize,
+  faculty = [],  // Set 5: Default to empty array
 }) => {
   const [currentStep, setCurrentStep] = useState<ArchivalStep>(() => {
     // Determine initial step based on archival state
@@ -34,6 +41,16 @@ const ArchivalActions: React.FC<ArchivalActionsProps> = ({
   const [processingMessage, setProcessingMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  
+  // Set 5: Newsletter modal state
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+  
+  // Set 4: Track cleaned content for display
+  const [cleanedContent, setCleanedContent] = useState<{
+    removedCount: number;
+    keptCount: number;
+    cleanedNotes: string[];
+  } | null>(null);
 
   const showNotification = (message: string) => {
     setToastMessage(message);
@@ -41,24 +58,63 @@ const ArchivalActions: React.FC<ArchivalActionsProps> = ({
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  // Set 4: Enhanced cleaning that processes rawTextNotes
   const handleCleanContent = async () => {
     setIsProcessing(true);
     setCurrentStep('cleaning');
-    setProcessingMessage('Cleaning content… please wait');
+    setProcessingMessage('Analyzing content with AI… please wait');
     
-    // Simulate AI processing (2-3 seconds)
-    await new Promise(resolve => setTimeout(resolve, 2500));
+    // Simulate AI processing step 1
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setProcessingMessage('Identifying irrelevant content…');
+    
+    // Simulate AI processing step 2
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setProcessingMessage('Filtering and cleaning…');
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Process rawTextNotes if available (demo feature)
+    const rawNotes = event.mediaLinks?.rawTextNotes || [];
+    let cleanedNotes: string[] = [];
+    let removedCount = 0;
+    
+    if (rawNotes.length > 0) {
+      // Mock AI: Filter out notes containing "Lorem ipsum" or generic filler
+      cleanedNotes = rawNotes.filter(note => {
+        const isIrrelevant = note.toLowerCase().includes('lorem ipsum') || 
+                            note.toLowerCase().includes('dolor sit amet') ||
+                            note.toLowerCase().includes('consectetur adipiscing');
+        if (isIrrelevant) {
+          removedCount++;
+          return false;
+        }
+        return true;
+      });
+    }
+    
+    setCleanedContent({
+      removedCount,
+      keptCount: cleanedNotes.length,
+      cleanedNotes
+    });
     
     setProcessingMessage('');
     setIsProcessing(false);
     setCurrentStep('cleaned');
     
+    // Update archival with cleaned content
     onUpdateArchival({
       ...event.archival,
       cleaned: true,
     });
     
-    showNotification('Cleanup complete. Please review the content.');
+    // Also update media links with cleaned notes
+    if (event.mediaLinks && cleanedNotes.length > 0) {
+      event.mediaLinks.cleanedTextNotes = cleanedNotes;
+    }
+    
+    showNotification(`Cleanup complete. ${removedCount} irrelevant items removed.`);
   };
 
   const handleValidateContent = async () => {
@@ -85,14 +141,41 @@ const ArchivalActions: React.FC<ArchivalActionsProps> = ({
   const handleGenerateSummary = async () => {
     setIsProcessing(true);
     setCurrentStep('generating');
+    setProcessingMessage('Analyzing event content…');
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
     setProcessingMessage('Generating AI summary… please wait');
     
     // Simulate AI summary generation (3 seconds)
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Generate mock summary
-    const mediaCount = (event.mediaLinks?.photos?.length || 0) + (event.mediaLinks?.videos?.length || 0);
-    const summary = `${event.title} was a successful ${event.type.toLowerCase()} organized by ${event.club}. The event took place at ${event.venue || 'the campus'} and featured various engaging activities. A total of ${mediaCount} media items were captured during the event. Participants had an enriching experience with valuable takeaways and memorable moments. The event showcased the vibrant culture and spirit of our college community.`;
+    // Set 4: Generate a more detailed summary using cleaned notes if available
+    const cleanedNotes = event.mediaLinks?.cleanedTextNotes || cleanedContent?.cleanedNotes || [];
+    const photoCount = event.mediaLinks?.photos?.length || 0;
+    const videoCount = event.mediaLinks?.videos?.length || 0;
+    
+    let summary: string;
+    
+    if (cleanedNotes.length > 0) {
+      // Create summary from cleaned notes (mock AI summarization)
+      const keyPoints = cleanedNotes.slice(0, 3).map(note => {
+        // Extract first sentence or first 100 chars
+        const firstSentence = note.split('.')[0];
+        return firstSentence.length > 100 ? firstSentence.substring(0, 100) + '...' : firstSentence;
+      });
+      
+      summary = `${event.title} was a highly successful ${event.type.toLowerCase()} organized by ${event.club} at ${event.venue || 'the campus'}.\n\n` +
+        `Key Highlights:\n` +
+        keyPoints.map((point, i) => `${i + 1}. ${point}`).join('\n') + '\n\n' +
+        `The event featured engaging sessions and activities that provided valuable insights to all participants. ` +
+        `A total of ${photoCount} photos and ${videoCount} videos were captured, documenting the memorable moments.\n\n` +
+        `The event successfully achieved its objectives and received positive feedback from attendees. ` +
+        `Faculty members who attended provided mentorship and guidance throughout the event.`;
+    } else {
+      // Fallback generic summary
+      const mediaCount = photoCount + videoCount;
+      summary = `${event.title} was a successful ${event.type.toLowerCase()} organized by ${event.club}. The event took place at ${event.venue || 'the campus'} and featured various engaging activities. A total of ${mediaCount} media items were captured during the event. Participants had an enriching experience with valuable takeaways and memorable moments. The event showcased the vibrant culture and spirit of our college community.`;
+    }
     
     setProcessingMessage('');
     setIsProcessing(false);
@@ -104,6 +187,11 @@ const ArchivalActions: React.FC<ArchivalActionsProps> = ({
       validated: true,
       summary: summary,
     });
+    
+    // Store summary in mediaLinks for Set 4
+    if (event.mediaLinks) {
+      event.mediaLinks.summary20Lines = summary;
+    }
     
     showNotification('Summary generated successfully.');
   };
@@ -194,6 +282,30 @@ const ArchivalActions: React.FC<ArchivalActionsProps> = ({
               <span className="text-green-600 text-sm font-medium">Completed</span>
             )}
           </div>
+          
+          {/* Set 4: Show cleaning results */}
+          {isCleaned && cleanedContent && cleanedContent.removedCount > 0 && (
+            <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </span>
+                  <span className="text-gray-600"><strong className="text-red-600">{cleanedContent.removedCount}</strong> irrelevant items removed</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                  <span className="text-gray-600"><strong className="text-green-600">{cleanedContent.keptCount}</strong> relevant items kept</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Step 2: Validate Content */}
@@ -299,6 +411,34 @@ const ArchivalActions: React.FC<ArchivalActionsProps> = ({
             )}
           </div>
         </div>
+
+        {/* Step 5: Newsletter Draft (Set 5) */}
+        {isFinalized && (
+          <div className="p-4 rounded-lg border bg-purple-50 border-purple-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Prepare Newsletter Draft</h4>
+                  <p className="text-sm text-gray-500">Generate publication-ready newsletter</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowNewsletterModal(true)}
+                className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Create Newsletter
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Final Status Banner */}
@@ -317,6 +457,14 @@ const ArchivalActions: React.FC<ArchivalActionsProps> = ({
           </div>
         </div>
       )}
+
+      {/* Set 5: Newsletter Draft Modal */}
+      <NewsletterDraftModal
+        isOpen={showNewsletterModal}
+        onClose={() => setShowNewsletterModal(false)}
+        event={event}
+        faculty={faculty}
+      />
     </div>
   );
 };
