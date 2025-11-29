@@ -28,6 +28,7 @@ import DashboardEventGroup from './routes/DashboardEventGroup';
 import DashboardOrganiser from './routes/DashboardOrganiser';
 import DashboardFaculty from './routes/DashboardFaculty';
 import DashboardArchiver from './routes/DashboardArchiver';
+import ArchiverEventPage from './routes/ArchiverEventPage';
 
 /**
  * Protected Route Component
@@ -109,6 +110,16 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute allowedRole="archiver">
               <DashboardArchiver />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Archiver Event Management Page */}
+        <Route
+          path="archiver/:eventId"
+          element={
+            <ProtectedRoute allowedRole="archiver">
+              <ArchiverEventPage />
             </ProtectedRoute>
           }
         />

@@ -9,15 +9,26 @@
  */
 
 // Event status for Set 1 workflow
-export type EventStatus = 'draft' | 'upcoming' | 'ended';
+export type EventStatus = 'draft' | 'upcoming' | 'ended' | 'archived';
 
 // Media links for ended events (gallery)
 export interface MediaLinks {
   photos: string[];
   videos: string[];
+  documents?: string[];  // Set 2: Support for document URLs
 }
 
-// Main Event interface for Set 1
+// Set 2: Archival information for ended events
+export interface ArchivalInfo {
+  uploadWindowExpiresAt?: string;   // ISO timestamp for upload window expiration
+  isUploadWindowExpired?: boolean;  // Computed from expiration timestamp
+  cleaned?: boolean;                // Whether content has been cleaned (mock AI)
+  validated?: boolean;              // Whether content has been validated
+  summary?: string;                 // AI-generated summary (mock)
+  finalizedAt?: string;             // When archive was finalized
+}
+
+// Main Event interface for Set 1 + Set 2
 export interface Event {
   id: string;
   title: string;
@@ -26,13 +37,14 @@ export interface Event {
   type: string;              // Type of event (workshop, talk, competition, etc.)
   shortDescription: string;  // Brief description for cards
   fullDescription?: string;  // Detailed description for event page
-  status: EventStatus;       // draft | upcoming | ended
+  status: EventStatus;       // draft | upcoming | ended | archived
   registrationUrl?: string;  // Generated registration link (for upcoming events)
-  mediaLinks?: MediaLinks;   // Photos/videos (for ended events)
+  mediaLinks?: MediaLinks;   // Photos/videos/documents (for ended/archived events)
   eventGroupId: string;      // Which event group owns this event
   imageUrl?: string;         // Optional cover image
   venue?: string;            // Event location
   lastUpdated: string;       // Last modification date
+  archival?: ArchivalInfo;   // Set 2: Archival workflow data
 }
 
 // Available clubs for filtering and selection
@@ -164,7 +176,7 @@ export const initialEvents: Event[] = [
     type: 'Workshop',
     shortDescription: 'Morning photography walk capturing campus beauty.',
     fullDescription: 'A serene morning walk around campus capturing the golden hour. Participants learned about composition, lighting, and storytelling through photos.',
-    status: 'ended',
+    status: 'archived',
     eventGroupId: 'eg-photo',
     imageUrl: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=400&h=250&fit=crop',
     venue: 'Campus Wide',
@@ -175,8 +187,19 @@ export const initialEvents: Event[] = [
         'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800',
       ],
       videos: [],
+      documents: [
+        'https://example.com/docs/photography-walk-guide.pdf',
+      ],
     },
-    lastUpdated: '2024-10-20',
+    archival: {
+      uploadWindowExpiresAt: '2024-10-25T23:59:59',
+      isUploadWindowExpired: true,
+      cleaned: true,
+      validated: true,
+      summary: 'The Photography Walk 2024 was a successful morning event where 35 participants explored the campus during golden hour. Key highlights included a photography basics workshop, hands-on guidance on composition and lighting, and a community photo review session. The event captured beautiful moments of campus life and nature.',
+      finalizedAt: '2024-10-28',
+    },
+    lastUpdated: '2024-10-28',
   },
   {
     id: '7',
@@ -198,6 +221,13 @@ export const initialEvents: Event[] = [
       videos: [
         'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       ],
+      documents: [],
+    },
+    archival: {
+      uploadWindowExpiresAt: '2025-12-15T23:59:59',
+      isUploadWindowExpired: false,
+      cleaned: false,
+      validated: false,
     },
     lastUpdated: '2024-09-25',
   },
@@ -341,4 +371,50 @@ export const filterEvents = (
 export const generateRegistrationUrl = (eventId: string, eventTitle: string) => {
   const slug = eventTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   return `https://register.eventportal.edu/${slug}-${eventId}`;
+};
+
+// =====================
+// Set 2: Archiver Helpers
+// =====================
+
+/**
+ * Get all archived events
+ */
+export const getArchivedEvents = (events: Event[]) => {
+  return events
+    .filter((e) => e.status === 'archived')
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+};
+
+/**
+ * Get events that need archival work (ended but not yet archived)
+ */
+export const getEventsForArchival = (events: Event[]) => {
+  return events
+    .filter((e) => e.status === 'ended')
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+};
+
+/**
+ * Check if upload window is expired for an event
+ */
+export const isUploadWindowExpired = (event: Event): boolean => {
+  if (!event.archival?.uploadWindowExpiresAt) return false;
+  return new Date(event.archival.uploadWindowExpiresAt) < new Date();
+};
+
+/**
+ * Generate upload link for an event (mock)
+ */
+export const generateUploadLink = (eventId: string, eventTitle: string) => {
+  const slug = eventTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  return `https://upload.eventportal.edu/${slug}-${eventId}`;
+};
+
+/**
+ * Generate a mock AI summary for an event
+ */
+export const generateMockSummary = (event: Event): string => {
+  const mediaCount = (event.mediaLinks?.photos?.length || 0) + (event.mediaLinks?.videos?.length || 0);
+  return `${event.title} was a successful ${event.type.toLowerCase()} organized by ${event.club}. The event took place at ${event.venue || 'the campus'} and featured various engaging activities. A total of ${mediaCount} media items were captured during the event. Participants had an enriching experience with valuable takeaways and memorable moments. The event showcased the vibrant culture and spirit of our college community.`;
 };

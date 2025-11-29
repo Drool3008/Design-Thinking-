@@ -15,17 +15,19 @@ interface EventCardProps {
   showStatus?: boolean; // Show status badge (for dashboards)
 }
 
-// Status badge colors for Set 1 workflow
+// Status badge colors for Set 1 + Set 2 workflow
 const statusColors: Record<EventStatus, string> = {
   draft: 'bg-gray-100 text-gray-600 border border-gray-300',
   upcoming: 'bg-green-100 text-green-700 border border-green-300',
   ended: 'bg-blue-100 text-blue-700 border border-blue-300',
+  archived: 'bg-purple-100 text-purple-700 border border-purple-300',
 };
 
 const statusLabels: Record<EventStatus, string> = {
   draft: 'Draft',
   upcoming: 'Upcoming',
   ended: 'Ended',
+  archived: 'Archived',
 };
 
 const EventCard: React.FC<EventCardProps> = ({ event, variant = 'default', showStatus = false }) => {

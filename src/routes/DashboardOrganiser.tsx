@@ -16,11 +16,12 @@ const DashboardOrganiser: React.FC = () => {
   const upcomingEvents = useMemo(() => getUpcomingEvents(initialEvents), []);
   const endedEvents = useMemo(() => getEndedEvents(initialEvents), []);
 
-  // Status badge colors
+  // Status badge colors (Set 1 + Set 2)
   const statusColors: Record<EventStatus, string> = {
     draft: 'bg-gray-100 text-gray-700',
     upcoming: 'bg-green-100 text-green-700',
     ended: 'bg-blue-100 text-blue-700',
+    archived: 'bg-purple-100 text-purple-700',
   };
 
   const formatDateTime = (dateTimeStr: string) => {

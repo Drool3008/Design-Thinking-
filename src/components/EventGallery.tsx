@@ -1,7 +1,7 @@
 /**
  * EventGallery Component
- * Displays photos and videos for ended events.
- * Part of Set 1 workflow - shown on event detail page for ended events.
+ * Displays photos, videos, and documents for ended/archived events.
+ * Updated for Set 2 workflow - now supports documents.
  */
 
 import React, { useState } from 'react';
@@ -13,14 +13,15 @@ interface EventGalleryProps {
 }
 
 const EventGallery: React.FC<EventGalleryProps> = ({ mediaLinks, eventTitle }) => {
-  const [activeTab, setActiveTab] = useState<'photos' | 'videos'>('photos');
+  const [activeTab, setActiveTab] = useState<'photos' | 'videos' | 'documents'>('photos');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const hasPhotos = mediaLinks.photos && mediaLinks.photos.length > 0;
   const hasVideos = mediaLinks.videos && mediaLinks.videos.length > 0;
+  const hasDocuments = mediaLinks.documents && mediaLinks.documents.length > 0;
 
-  if (!hasPhotos && !hasVideos) {
+  if (!hasPhotos && !hasVideos && !hasDocuments) {
     return null;
   }
 
@@ -48,42 +49,74 @@ const EventGallery: React.FC<EventGalleryProps> = ({ mediaLinks, eventTitle }) =
     return match && match[2].length === 11 ? match[2] : null;
   };
 
+  // Get filename from URL
+  const getFileName = (url: string) => {
+    try {
+      const pathname = new URL(url).pathname;
+      return pathname.split('/').pop() || 'Document';
+    } catch {
+      return url.split('/').pop() || 'Document';
+    }
+  };
+
+  // Count how many media types we have
+  const mediaTypeCount = [hasPhotos, hasVideos, hasDocuments].filter(Boolean).length;
+
   return (
     <div className="mt-8">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Event Gallery</h2>
         
-        {/* Tab Buttons (if both photos and videos exist) */}
-        {hasPhotos && hasVideos && (
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setActiveTab('photos')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'photos'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Photos ({mediaLinks.photos.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('videos')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'videos'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Videos ({mediaLinks.videos.length})
-            </button>
+        {/* Tab Buttons (show if more than one media type exists) */}
+        {mediaTypeCount > 1 && (
+          <div className="flex bg-gray-100 rounded-lg p-1 flex-wrap">
+            {hasPhotos && (
+              <button
+                onClick={() => setActiveTab('photos')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'photos'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Photos ({mediaLinks.photos.length})
+              </button>
+            )}
+            {hasVideos && (
+              <button
+                onClick={() => setActiveTab('videos')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'videos'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Videos ({mediaLinks.videos.length})
+              </button>
+            )}
+            {hasDocuments && (
+              <button
+                onClick={() => setActiveTab('documents')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'documents'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Documents ({mediaLinks.documents?.length || 0})
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -144,6 +177,34 @@ const EventGallery: React.FC<EventGalleryProps> = ({ mediaLinks, eventTitle }) =
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Documents List */}
+      {activeTab === 'documents' && hasDocuments && (
+        <div className="space-y-3">
+          {mediaLinks.documents?.map((doc, index) => (
+            <a
+              key={index}
+              href={doc}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 truncate">{getFileName(doc)}</p>
+                <p className="text-sm text-gray-500 truncate">{doc}</p>
+              </div>
+              <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          ))}
         </div>
       )}
 
