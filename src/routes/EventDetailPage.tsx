@@ -15,7 +15,7 @@ import type { Faculty } from '../data/faculty';
 import EventCard from '../components/EventCard';
 import EventGallery from '../components/EventGallery';
 import SectionHeading from '../components/SectionHeading';
-import FacultyFlashCard from '../components/FacultyFlashCard';
+import FacultyDetailPanel from '../components/FacultyDetailPanel';
 import RequestMeetingModal from '../components/RequestMeetingModal';
 
 const EventDetailPage: React.FC = () => {
@@ -27,6 +27,9 @@ const EventDetailPage: React.FC = () => {
   // State for faculty meeting request modal
   const [meetingModalOpen, setMeetingModalOpen] = useState(false);
   const [selectedFacultyForMeeting, setSelectedFacultyForMeeting] = useState<Faculty | null>(null);
+  
+  // State for click-to-open faculty detail panel (Set 4)
+  const [selectedFacultyForPanel, setSelectedFacultyForPanel] = useState<Faculty | null>(null);
 
   // Get event by ID from context
   const event = useMemo(() => {
@@ -263,7 +266,7 @@ const EventDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Faculty Flashcards Grid */}
+            {/* Faculty Attendees - Clickable List (Set 4 - Click to Open) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {Object.entries(event.facultyAttendance)
                 .filter(([, attended]) => attended)
@@ -271,15 +274,26 @@ const EventDetailPage: React.FC = () => {
                   const faculty = getFacultyById(facultyId);
                   if (!faculty) return null;
                   return (
-                    <FacultyFlashCard
+                    <button
                       key={faculty.id}
-                      faculty={faculty}
-                      showMeetingButton={true}
-                      onRequestMeeting={() => {
-                        setSelectedFacultyForMeeting(faculty);
-                        setMeetingModalOpen(true);
-                      }}
-                    />
+                      onClick={() => setSelectedFacultyForPanel(faculty)}
+                      className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-purple-50 rounded-xl transition-all duration-200 text-left group border border-transparent hover:border-purple-200"
+                    >
+                      <img
+                        src={faculty.photoUrl}
+                        alt={faculty.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm group-hover:border-purple-200 transition-colors"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 truncate group-hover:text-purple-700 transition-colors">
+                          {faculty.name}
+                        </h4>
+                        <p className="text-sm text-gray-500 truncate">{faculty.designation}</p>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400 group-hover:text-purple-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   );
                 })}
             </div>
@@ -309,6 +323,18 @@ const EventDetailPage: React.FC = () => {
             eventTitle={event.title}
           />
         )}
+
+        {/* Faculty Detail Panel - Click to Open (Set 4) */}
+        <FacultyDetailPanel
+          faculty={selectedFacultyForPanel}
+          eventTitle={event.title}
+          isOpen={selectedFacultyForPanel !== null}
+          onClose={() => setSelectedFacultyForPanel(null)}
+          onRequestMeeting={(faculty) => {
+            setSelectedFacultyForMeeting(faculty);
+            setMeetingModalOpen(true);
+          }}
+        />
       </div>
 
       {/* Related Events Section */}

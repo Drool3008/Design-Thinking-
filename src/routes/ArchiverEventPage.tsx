@@ -12,6 +12,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEvents } from '../context/EventContext';
 import { generateUploadLink, type Event, type ArchivalInfo } from '../data/events';
+import { facultyMembers } from '../data/faculty';
 import UploadWindowControls from '../components/UploadWindowControls';
 import ArchivalActions from '../components/ArchivalActions';
 
@@ -610,6 +611,7 @@ const ArchiverEventPage: React.FC = () => {
             event={event}
             onUpdateArchival={handleUpdateArchival}
             onFinalize={handleFinalize}
+            faculty={facultyMembers}
           />
         </div>
       </div>
