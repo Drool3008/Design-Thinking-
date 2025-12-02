@@ -3,6 +3,7 @@
  * Full event information page with registration link (upcoming) or gallery (ended/archived).
  * Updated for Set 2 workflow - now shows archival summary for archived events.
  * Updated for Set 3 workflow - faculty-only visibility of attendees with flashcards and meeting requests.
+ * Updated for Set 6 - faculty summary widget with PDF/PNG download.
  */
 
 import React, { useMemo, useState } from 'react';
@@ -12,11 +13,13 @@ import type { EventStatus } from '../data/events';
 import { useAuth } from '../context/AuthContext';
 import { getFacultyById, facultyMembers } from '../data/faculty';
 import type { Faculty } from '../data/faculty';
+import { hasSummaries } from '../data/summaries';
 import EventCard from '../components/EventCard';
 import EventGallery from '../components/EventGallery';
 import SectionHeading from '../components/SectionHeading';
 import FacultyDetailPanel from '../components/FacultyDetailPanel';
 import RequestMeetingModal from '../components/RequestMeetingModal';
+import FacultySummaryWidget from '../components/FacultySummaryWidget';
 
 const EventDetailPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -30,6 +33,9 @@ const EventDetailPage: React.FC = () => {
   
   // State for click-to-open faculty detail panel (Set 4)
   const [selectedFacultyForPanel, setSelectedFacultyForPanel] = useState<Faculty | null>(null);
+
+  // State for faculty summary widget (Set 6)
+  const [summaryWidgetOpen, setSummaryWidgetOpen] = useState(false);
 
   // Get event by ID from context
   const event = useMemo(() => {
@@ -252,18 +258,34 @@ const EventDetailPage: React.FC = () => {
         {/* Faculty Attendees Section - Only visible to faculty */}
         {role === 'faculty' && (event.status === 'ended' || event.status === 'archived') && event.facultyAttendance && (
           <div className="mt-8 bg-white rounded-2xl shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Faculty Attendees</h3>
+                  <p className="text-sm text-gray-500">
+                    {Object.values(event.facultyAttendance).filter(Boolean).length} faculty members attended
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Faculty Attendees</h3>
-                <p className="text-sm text-gray-500">
-                  {Object.values(event.facultyAttendance).filter(Boolean).length} faculty members attended
-                </p>
-              </div>
+
+              {/* Faculty Summaries Button (Set 6) */}
+              {hasSummaries(event.id) && (
+                <button
+                  onClick={() => setSummaryWidgetOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                  aria-label="View event summaries"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Summaries
+                </button>
+              )}
             </div>
 
             {/* Faculty Attendees - Clickable List (Set 4 - Click to Open) */}
@@ -335,6 +357,15 @@ const EventDetailPage: React.FC = () => {
             setMeetingModalOpen(true);
           }}
         />
+
+        {/* Faculty Summary Widget (Set 6) */}
+        {summaryWidgetOpen && (
+          <FacultySummaryWidget
+            eventId={event.id}
+            eventTitle={event.title}
+            onClose={() => setSummaryWidgetOpen(false)}
+          />
+        )}
       </div>
 
       {/* Related Events Section */}
