@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Event } from '../data/events';
 import type { Faculty } from '../data/faculty';
 import { predefinedTemplates, type NewsletterTemplate } from '../data/templates';
+import { addPublishedDraft, type PublishedDraft } from '../data/publishedDrafts';
 import TemplateSelector from './TemplateSelector';
 import NewsletterPreview from './NewsletterPreview';
 
@@ -49,6 +50,7 @@ export default function NewsletterDraftModal({ isOpen, onClose, event, faculty }
   const [generatedDraft, setGeneratedDraft] = useState<GeneratedDraft | null>(null);
   const [newQuote, setNewQuote] = useState('');
   const [newHighlight, setNewHighlight] = useState('');
+  const [isPublished, setIsPublished] = useState(false);
 
   // Get photos from event media
   const eventPhotos = event.mediaLinks?.photos || [];
@@ -346,6 +348,28 @@ export default function NewsletterDraftModal({ isOpen, onClose, event, faculty }
       a.download = `newsletter-${event.id}-${Date.now()}.html`;
       a.click();
       URL.revokeObjectURL(url);
+    }
+  };
+
+  // Publish draft to publishedDrafts store (Set 6 integration)
+  const handlePublishDraft = () => {
+    if (generatedDraft && selectedTemplate) {
+      const publishedDraft: PublishedDraft = {
+        id: `draft-${event.id}-${Date.now()}`,
+        eventId: event.id,
+        eventTitle: event.title,
+        templateId: selectedTemplate.id,
+        title: customizations.title,
+        date: event.dateTime.split('T')[0],
+        htmlContent: generatedDraft.bodyHtml,
+        summary: customizations.summary,
+        club: event.club,
+        venue: event.venue,
+        photos: customizations.selectedPhotos,
+        publishedAt: new Date().toISOString(),
+      };
+      addPublishedDraft(publishedDraft);
+      setIsPublished(true);
     }
   };
 
@@ -677,8 +701,47 @@ export default function NewsletterDraftModal({ isOpen, onClose, event, faculty }
                   </button>
                 </div>
 
+                {/* Publish Draft Button */}
+                <div className="mt-4">
+                  <button
+                    onClick={handlePublishDraft}
+                    disabled={isPublished}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-colors ${
+                      isPublished
+                        ? 'bg-emerald-100 text-emerald-700 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700'
+                    }`}
+                  >
+                    {isPublished ? (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Published to Event Book
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                          />
+                        </svg>
+                        Publish to Event Book
+                      </>
+                    )}
+                  </button>
+                  {isPublished && (
+                    <p className="text-center text-sm text-emerald-600 mt-2">
+                      This newsletter is now available for faculty to include in their Event Book downloads.
+                    </p>
+                  )}
+                </div>
+
                 {/* HTML Preview */}
-                <div>
+                <div className="mt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">HTML Preview</label>
                   <div className="bg-gray-900 rounded-lg p-4 max-h-64 overflow-y-auto">
                     <pre className="text-green-400 text-xs font-mono whitespace-pre-wrap">
