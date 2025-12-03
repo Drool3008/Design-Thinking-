@@ -652,6 +652,147 @@ A comprehensive bootcamp covering modern web development with React, Node.js, an
       ],
     },
   ],
+
+  // Event ID 6 - Photography Walk 2024 (ARCHIVED event)
+  '6': [
+    {
+      title: 'Event Recap',
+      category: 'eventRecap',
+      text: `# Photography Walk 2024 - Event Recap
+
+## Event Overview
+The Photography Walk 2024 was a successful morning event organized by the Photography Club. Participants gathered at 7:00 AM to capture the campus during the magical golden hour.
+
+## Key Highlights
+
+### Participation
+- 35 participants joined the early morning session
+- Mix of beginners and experienced photographers
+- Faculty mentors provided guidance throughout
+
+### Activities Conducted
+1. **Photography Basics Workshop** - 30 minutes intro session
+2. **Guided Campus Walk** - 2-hour exploration of scenic spots
+3. **Composition Tips** - On-site demonstrations
+4. **Lighting Techniques** - Golden hour photography techniques
+5. **Community Photo Review** - Collaborative feedback session
+
+### Locations Covered
+- Central Garden
+- Heritage Building
+- Lake View Point
+- Sports Complex
+- Library Courtyard
+
+## Outcomes
+- Over 500 photos captured collectively
+- Best shots featured in college newsletter
+- Photo exhibition planned for next month
+
+## Participant Feedback
+"Amazing experience! Learned so much about composition and lighting." - Student Participant
+"The golden hour timing was perfect. Great organization!" - Photography Club Member`,
+      author: 'Photography Club',
+      generatedAt: '2024-10-28T12:00:00Z',
+      images: [
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800',
+      ],
+      keyPoints: [
+        '35 participants attended',
+        '500+ photos captured',
+        'Golden hour timing',
+        'Hands-on learning experience',
+      ],
+    },
+    {
+      title: 'Media Highlights',
+      category: 'mediaHighlights',
+      text: `# Photography Walk 2024 - Media Highlights
+
+## Photo Gallery
+The Photography Walk produced stunning visual content showcasing our beautiful campus during golden hour.
+
+### Featured Photos
+1. **Sunrise over Central Garden** - Captured by Team Alpha
+2. **Heritage Building Silhouette** - Award-winning shot
+3. **Lake Reflections** - Most liked on social media
+4. **Candid Moments** - Participants in action
+
+## Social Media Coverage
+- Instagram Posts: 25+
+- Total Reach: 5,000+ users
+- Most Popular Post: Lake reflection shot (800+ likes)
+
+## Video Highlights
+- 3-minute recap video created
+- Time-lapse of sunrise sequence
+- Behind-the-scenes footage
+
+## Media Recognition
+- Featured in college newsletter
+- Local newspaper coverage
+- Photography magazine mention`,
+      author: 'Media Team',
+      generatedAt: '2024-10-28T14:00:00Z',
+      images: [
+        'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800',
+        'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+      ],
+      keyPoints: [
+        '25+ social media posts',
+        '5,000+ reach',
+        'Featured in newsletter',
+        'Video recap created',
+      ],
+    },
+    {
+      title: 'Attendance Summary',
+      category: 'attendance',
+      text: `# Photography Walk 2024 - Attendance Report
+
+## Registration Statistics
+- Total Registrations: 40 students
+- Actual Attendance: 35 students
+- Attendance Rate: 87.5%
+
+## Participant Breakdown
+
+### By Department
+- Fine Arts: 12 students
+- Mass Communication: 8 students
+- Computer Science: 6 students
+- Other Departments: 9 students
+
+### By Experience Level
+- Beginners: 20 students
+- Intermediate: 10 students
+- Advanced: 5 students
+
+## Faculty Attendance
+| Faculty | Department | Role |
+|---------|------------|------|
+| Dr. Ananya Iyer | Fine Arts | Event Coordinator |
+| Prof. Vikram Singh | Mass Comm | Photography Mentor |
+
+## Equipment Used
+- DSLR Cameras: 15
+- Mirrorless: 8
+- Smartphones: 12 (for beginners)
+
+## Notable Absences
+- 5 registered students couldn't attend due to early timing
+- Weather concerns for some participants`,
+      author: 'Event Coordinator',
+      generatedAt: '2024-10-28T16:00:00Z',
+      keyPoints: [
+        '35 out of 40 attended',
+        '87.5% attendance rate',
+        '2 faculty mentors',
+        'Mix of all experience levels',
+      ],
+    },
+  ],
 };
 
 /**
